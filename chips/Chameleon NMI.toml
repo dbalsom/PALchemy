@@ -1,0 +1,32 @@
+name = "NMI"
+model = "PAL12L6"
+source = "Seequa Chameleon"
+model_description = "Combinatorial PAL, 12 inputs, 6 active low outputs"
+app_description = "Controls NMI and IRQ7 signals"
+class = "combinatorial_pal"
+pins = 20
+voltage = 5.0
+io_voltage = 3.3
+package = "DIP"
+
+[pinout]
+1 = { type = "Input", name = "/LPT_ACK" }
+2 = { type = "Input", name = "LPT_SELECT_IN" }
+3 = { type = "Input", name = "NMI_P3" }
+4 = { type = "Input", name = "/IO_CK_EN" }
+5 = { type = "Input", name = "OPT1_B5" }
+6 = { type = "Input", name = "OPT1_B4" }
+7 = { type = "Input", name = "OPT1_B3" }
+8 = { type = "Input", name = "EVEN_PARITY" }
+9 = { type = "Input", name = "INT" }
+10 = { type = "GND" }
+11 = { type = "Input", name = "/IO_CH_CK" }
+12 = { type = "Input", name = "OUT_3_FEEDBACK" }
+13 = { type = "Output", name = "/Z80_NMI", active_low = true }
+14 = { type = "Output", name = "NC", active_low = true }
+15 = { type = "Output", name = "OUT_3", active_low = true }
+16 = { type = "Output", name = "IO_CK_OUT", active_low = true }
+17 = { type = "Output", name = "IRQ7", active_low = true }
+18 = { type = "Output", name = "/NMI", active_low = true }
+19 = { type = "Input", name = "IO_CK_FEEDBACK" }
+20 = { type = "VCC" }

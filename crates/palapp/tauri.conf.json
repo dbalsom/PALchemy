@@ -1,0 +1,33 @@
+{
+    "productName": "PALchemy",
+    "version": "0.1.0",
+    "identifier": "com.palchemy.dev",
+    "build": {
+        "beforeDevCommand": "cd palgui && trunk serve --port 1420",
+        "beforeBuildCommand": "cd palgui && trunk build --release",
+        "devUrl": "http://localhost:1420",
+        "frontendDist": "../palgui/dist"
+    },
+    "app": {
+        "withGlobalTauri": true,
+        "windows": [
+            {
+                "title": "PALchemy",
+                "width": 1400,
+                "height": 900
+            }
+        ],
+        "security": {
+            "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self'; script-src 'self' 'wasm-unsafe-eval'",
+            "devCsp": "default-src 'self'; style-src 'self' 'unsafe-inline' http://localhost:1420; font-src 'self' http://localhost:1420; img-src 'self' data: blob: http://localhost:1420; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' ipc: http://ipc.localhost ws://localhost:1420 http://localhost:1420"
+        }
+    },
+    "bundle": {
+        "active": true,
+        "targets": "all",
+        "icon": [
+            "icons/32x32.png",
+            "icons/icon.ico"
+        ]
+    }
+}

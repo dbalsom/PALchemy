@@ -1,0 +1,34 @@
+.mode_action_bar {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--border-glass);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+.mode_info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.chip_name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.chip_description {
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.mode_desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}

@@ -1,0 +1,87 @@
+.status_bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    background-image: var(--bg-header-gradient);
+    border-top: 1px solid var(--border-glass);
+    height: var(--status-bar-height);
+    padding: 0 1rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.status_left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.status_dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4b5563;
+    flex-shrink: 0;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.status_dot.connected {
+    background: var(--success);
+    box-shadow: 0 0 5px var(--success);
+}
+
+.status_dot.error {
+    background: var(--danger);
+    box-shadow: 0 0 5px var(--danger);
+}
+
+.status_label {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.device_name {
+    color: var(--text-main);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.connection_type {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+}
+
+.info_btn {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    border: 1px solid var(--border-glass);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 0.25rem;
+    
+    &:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: var(--text-main);
+    }
+}
+
+.info_btn_hidden {
+    visibility: hidden;
+    pointer-events: none;
+}

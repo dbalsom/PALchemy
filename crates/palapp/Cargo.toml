@@ -1,0 +1,31 @@
+[package]
+name = "palapp"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR GPL-3.0-or-later"
+
+[build-dependencies]
+tauri-build = { version = "2.0.0", features = [] }
+built = { version = "0.7", features = ["git2"] }
+
+[dependencies]
+tauri = { version = "2.0.0", features = [] }
+tauri-plugin-shell = "2.0.0"
+palcore = { path = "../palcore" }
+palhal = { path = "../palhal" }
+teefo-rs = { path = "../teefo-rs" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tokio = { workspace = true }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-notification = "2"
+lazy_static = "1.5.0"
+async-trait = { workspace = true }
+toml_edit = { workspace = true }
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]

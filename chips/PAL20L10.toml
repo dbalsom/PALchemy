@@ -1,0 +1,33 @@
+model = "PAL20L10"
+model_description = "Combinatorial PAL, 10 active low outputs"
+class = "combinatorial_pal"
+pins = 24
+voltage = 5.0
+io_voltage = 3.3
+package = "DIP"
+
+[pinout]
+1 = { type = "Input", name = "IN_0" }
+2 = { type = "Input", name = "IN_1" }
+3 = { type = "Input", name = "IN_2" }
+4 = { type = "Input", name = "IN_3" }
+5 = { type = "Input", name = "IN_4" }
+6 = { type = "Input", name = "IN_5" }
+7 = { type = "Input", name = "IN_6" }
+8 = { type = "Input", name = "IN_7" }
+9 = { type = "Input", name = "IN_8" }
+10 = { type = "Input", name = "IN_9" }
+11 = { type = "Input", name = "IN_10" }
+12 = { type = "GND" }
+13 = { type = "Input", name = "IN_11" }
+14 = { type = "Output", name = "OUT_1", active_low = true }
+15 = { type = "IO", name = "I/O_2", active_low = true }
+16 = { type = "IO", name = "I/O_3", active_low = true }
+17 = { type = "IO", name = "I/O_4", active_low = true }
+18 = { type = "IO", name = "I/O_5", active_low = true }
+19 = { type = "IO", name = "I/O_6", active_low = true }
+20 = { type = "IO", name = "I/O_7", active_low = true }
+21 = { type = "IO", name = "I/O_8", active_low = true }
+22 = { type = "IO", name = "I/O_9", active_low = true }
+23 = { type = "Output", name = "OUT_10", active_low = true }
+24 = { type = "VCC" }

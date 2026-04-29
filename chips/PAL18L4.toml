@@ -1,0 +1,33 @@
+model = "PAL18L4"
+model_description = "Combinatorial PAL, 18 inputs, 4 active low outputs"
+class = "combinatorial_pal"
+pins = 24
+voltage = 5.0
+io_voltage = 3.3
+package = "DIP"
+
+[pinout]
+1 = { type = "Input", name = "IN_1" }
+2 = { type = "Input", name = "IN_2" }
+3 = { type = "Input", name = "IN_3" }
+4 = { type = "Input", name = "IN_4" }
+5 = { type = "Input", name = "IN_5" }
+6 = { type = "Input", name = "IN_6" }
+7 = { type = "Input", name = "IN_7" }
+8 = { type = "Input", name = "IN_8" }
+9 = { type = "Input", name = "IN_9" }
+10 = { type = "Input", name = "IN_10" }
+11 = { type = "Input", name = "IN_11" }
+12 = { type = "GND" }
+13 = { type = "Input", name = "IN_12" }
+14 = { type = "Input", name = "IN_13" }
+15 = { type = "Input", name = "IN_14" }
+16 = { type = "Input", name = "IN_15" }
+17 = { type = "Output", name = "OUT_1", active_low = true }
+18 = { type = "Output", name = "OUT_2", active_low = true }
+19 = { type = "Output", name = "OUT_3", active_low = true }
+20 = { type = "Output", name = "OUT_4", active_low = true }
+21 = { type = "Input", name = "IN_16" }
+22 = { type = "Input", name = "IN_17" }
+23 = { type = "Input", name = "IN_18" }
+24 = { type = "VCC" }

@@ -1,0 +1,14 @@
+[package]
+name = "palhal"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+palcore = { path = "../palcore" }
+teefo-rs = { path = "../teefo-rs" }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["signal", "time"] }

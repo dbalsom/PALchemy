@@ -1,0 +1,29 @@
+model = "PAL16L8"
+model_description = "Combinatorial PAL, up to 8 outputs"
+class = "combinatorial_pal"
+pins = 20
+voltage = 5.0
+io_voltage = 3.3
+package = "DIP"
+
+[pinout]
+1 = { type = "Input", name = "IN_1" }
+2 = { type = "Input", name = "IN_2" }
+3 = { type = "Input", name = "IN_3" }
+4 = { type = "Input", name = "IN_4" }
+5 = { type = "Input", name = "IN_5" }
+6 = { type = "Input", name = "IN_6" }
+7 = { type = "Input", name = "IN_7" }
+8 = { type = "Input", name = "IN_8" }
+9 = { type = "Input", name = "IN_9" }
+10 = { type = "GND" }
+11 = { type = "Input", name = "IN_10" }
+12 = { type = "Output", name = "OUT_1", active_low = true }
+13 = { type = "IO", name = "I/O_2", active_low = true }
+14 = { type = "IO", name = "I/O_3", active_low = true }
+15 = { type = "IO", name = "I/O_4", active_low = true }
+16 = { type = "IO", name = "I/O_5", active_low = true }
+17 = { type = "IO", name = "I/O_6", active_low = true }
+18 = { type = "IO", name = "I/O_7", active_low = true }
+19 = { type = "Output", name = "OUT_8", active_low = true }
+20 = { type = "VCC" }

@@ -1,0 +1,66 @@
+.bottom_pane {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    height: 100vh;
+    padding: 0;
+    overflow: hidden;
+    background-image: var(--bg-header-gradient);
+}
+
+
+
+.log_view {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 1rem 1.5rem;
+    /* https://qwtel.com/posts/software/the-monospaced-system-ui-css-font-stack/ */
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Custom Scrollbar */
+.log_view::-webkit-scrollbar {
+    width: 6px;
+}
+
+.log_view::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+.log_view::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+}
+
+.log_view::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.log_entry {
+    color: var(--text-muted);
+}
+
+.log_entry.trace {
+    color: rgba(148, 163, 184, 0.5); /* #94a3b8 but 50% opacity */
+}
+
+.log_entry.debug {
+    color: var(--text-muted);
+}
+
+.log_entry.sys {
+    color: var(--accent);
+}
+
+.log_entry.warn {
+    color: #eab308; /* yellow-500 */
+}
+
+.log_entry.err {
+    color: var(--danger);
+}

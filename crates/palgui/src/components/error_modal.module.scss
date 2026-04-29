@@ -1,0 +1,36 @@
+.modal_overlay {
+    @include modals.modal-overlay;
+}
+
+.modal_content {
+    @include modals.modal-content(520px);
+}
+
+.modal_header {
+    @include modals.modal-header;
+}
+
+.close_icon {
+    @include modals.close-icon;
+    font-size: 2rem;
+}
+
+.modal_body {
+    @include modals.modal-body;
+}
+
+.message {
+    margin: 0;
+    color: var(--text-main);
+    line-height: 1.5;
+}
+
+.device_label {
+    margin: 0.75rem 0 0;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.modal_footer {
+    @include modals.modal-footer;
+}

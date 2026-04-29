@@ -1,0 +1,28 @@
+<!-- 
+ This is the main template for the trunk-rs build system.
+ Assets are copied into /dist based on link tags with the data-trunk attribute.
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PALchemy</title>
+
+    <!-- Global CSS stuff, variables, that don't belong to a specific component -->
+    <link data-trunk rel="scss" data-sass-load-path="." href="style/global.scss" />
+
+    <!-- CSS bundle compiled by Stylance -->
+    <link data-trunk rel="scss" href="style/bundle_entry.scss" />
+
+    <!-- The rest of our static assets (fonts, icons, auto-playing MIDI files, under-construction GIFS..) -->
+    <link data-trunk rel="copy-dir" href="assets/" />
+
+    <!-- rust cargo options? in *my* html? its likelier than you think -->
+    <link data-trunk rel="rust" data-wasm-opt="z" data-cargo-features="csr" />
+</head>
+
+<body></body>
+
+</html>

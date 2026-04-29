@@ -1,0 +1,13 @@
+[package]
+name = "palcli"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR GPL-3.0-or-later"
+
+[dependencies]
+palcore = { path = "../palcore" }
+palhal = { path = "../palhal" }
+bpaf = { version = "0.9", features = ["derive"] }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

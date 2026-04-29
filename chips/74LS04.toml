@@ -1,0 +1,23 @@
+model = "74LS04"
+model_description = "Hex inverter"
+class = "logic"
+pins = 14
+voltage = 5.0
+io_voltage = 3.3
+package = "DIP"
+
+[pinout]
+1 = { type = "Input", name = "1A" }
+2 = { type = "Output", name = "1Y" }
+3 = { type = "Input", name = "2A" }
+4 = { type = "Output", name = "2Y" }
+5 = { type = "Input", name = "3A" }
+6 = { type = "Output", name = "3Y" }
+7 = { type = "GND" }
+8 = { type = "Output", name = "4Y" }
+9 = { type = "Input", name = "4A" }
+10 = { type = "Output", name = "5Y" }
+11 = { type = "Input", name = "5A" }
+12 = { type = "Output", name = "6Y" }
+13 = { type = "Input", name = "6A" }
+14 = { type = "VCC" }

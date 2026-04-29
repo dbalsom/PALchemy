@@ -1,0 +1,9 @@
+
+# References
+references/
+
+# Rust stuff
+**/target
+
+# Image source data
+crates/palgui/assets/img/256_export

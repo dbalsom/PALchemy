@@ -1,0 +1,5 @@
+// The intent here is to avoid duplicate @use definitions when modules are bundled together
+@use "variables" as *;
+@use "modals" as modals;
+@use "logo";
+@import "../src/components/bundle.scss";

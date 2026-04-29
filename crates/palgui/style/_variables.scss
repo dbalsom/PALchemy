@@ -1,0 +1,145 @@
+:root {
+    color-scheme: dark;
+    --root-font-size: 16px;
+    --accent: var(--theme-accent);
+    --accent-hover: var(--theme-accent-hover);
+    --success: var(--theme-success);
+    --danger: var(--theme-danger);
+    --warning: var(--theme-warning);
+    --color-input: var(--theme-color-input);
+    --color-output: var(--theme-color-output);
+    --color-io: var(--theme-color-io);
+    --color-power: var(--theme-color-power);
+    --logo-pal: var(--theme-logo-pal);
+    --logo-chemy-start: var(--theme-logo-chemy-start);
+    --logo-chemy-end: var(--theme-logo-chemy-end);
+    --pin-toggle-track-active: var(--success);
+    --pin-toggle-handle: #ffffff;
+    --pin-led-on-ring: rgba(255, 255, 255, 0.35);
+    --font-mono: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Oxygen Mono",
+        "Ubuntu Monospace", "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
+    --status-bar-height: 32px;
+}
+
+:root[data-theme="wong"] {
+    --bg-dark: #1f2245;
+    --bg-panel: rgba(22, 26, 51, 0.82);
+    --bg-glass: rgba(16, 20, 41, 0.72);
+    --bg-header-gradient: linear-gradient(to bottom, #31426a 0%, #26345a 10%, #1c2548 90%, #171d3b 100%);
+    --border-glass: rgba(255, 255, 255, 0.12);
+    --text-main: #f8fafc;
+    --text-muted: #a9b5cf;
+    --text-heading: #f1f5f9;
+    --theme-accent: #76B0E4;
+    --theme-accent-hover: #3A6FAD;
+    --theme-success: #4F9877;
+    --theme-danger: #C16D22;
+    --theme-warning: #D8A535;
+    --theme-color-input: #4F9877;
+    --theme-color-output: #3A6FAD;
+    --theme-color-io: #D8A535;
+    --theme-color-power: #C16D22;
+    --theme-logo-pal: #76B0E4;
+    --theme-logo-chemy-start: #76B0E4;
+    --theme-logo-chemy-end: #BD82A4;
+    --theme-accent-contrast: #A7D0F2;
+    --theme-accent-hover-contrast: #76B0E4;
+    --theme-success-contrast: #76C4A2;
+    --theme-danger-contrast: #E59A5F;
+    --theme-warning-contrast: #F3D96A;
+    --theme-color-input-contrast: #76C4A2;
+    --theme-color-output-contrast: #A7D0F2;
+    --theme-color-io-contrast: #F3D96A;
+    --theme-color-power-contrast: #E59A5F;
+    --chip-body: #3a3e44;
+    --chip-body2: #272a30;
+    --chip-pin: #cbd5e1;
+    --pin-toggle-track: #334155;
+    --pin-toggle-track-active: var(--success);
+    --pin-toggle-border: rgba(255, 255, 255, 0.4);
+    --pin-toggle-handle: #ffffff;
+    --pin-led-off-fill: #111827;
+    --pin-led-off-border: rgba(255, 255, 255, 0.38);
+    --pin-led-on-ring: rgba(255, 255, 255, 0.35);
+    --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+    --scrollbar-track: rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme="classic"] {
+    --bg-dark: #24295f;
+    --bg-panel: rgba(30, 41, 59, 0.7);
+    --bg-glass: rgba(23, 42, 15, 0.35);
+    --bg-header-gradient: linear-gradient(to bottom, #3b427a 0%, #292d5c 8%, #1f2353 90%, #171a40 100%);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-heading: #e2e8f0;
+    --theme-accent: #3b82f6;
+    --theme-accent-hover: #2563eb;
+    --theme-success: #10b981;
+    --theme-danger: #ef4444;
+    --theme-warning: #fbbf24;
+    --theme-color-input: #22c55e;
+    --theme-color-output: #60a5fa;
+    --theme-color-io: #fbbf24;
+    --theme-color-power: #f87171;
+    --theme-logo-pal: #38bdf8;
+    --theme-logo-chemy-start: #60a5fa;
+    --theme-logo-chemy-end: #c084fc;
+    --theme-accent-contrast: #93c5fd;
+    --theme-accent-hover-contrast: #60a5fa;
+    --theme-success-contrast: #6ee7b7;
+    --theme-danger-contrast: #fca5a5;
+    --theme-warning-contrast: #fde047;
+    --theme-color-input-contrast: #6ee7b7;
+    --theme-color-output-contrast: #93c5fd;
+    --theme-color-io-contrast: #fde047;
+    --theme-color-power-contrast: #fca5a5;
+    --chip-body: #3a3e44;
+    --chip-body2: #272a30;
+    --chip-pin: #cbd5e1;
+    --pin-toggle-track: #374151;
+    --pin-toggle-track-active: var(--success);
+    --pin-toggle-border: rgba(255, 255, 255, 0.32);
+    --pin-toggle-handle: #ffffff;
+    --pin-led-off-fill: #111827;
+    --pin-led-off-border: rgba(255, 255, 255, 0.32);
+    --pin-led-on-ring: rgba(255, 255, 255, 0.28);
+}
+
+:root[data-contrast="high"] {
+    --bg-dark: #0b1020;
+    --bg-panel: rgba(0, 0, 0, 0.9);
+    --bg-glass: rgba(0, 0, 0, 0.92);
+    --bg-header-gradient: linear-gradient(to bottom, #111827 0%, #0b1020 100%);
+    --border-glass: rgba(255, 255, 255, 0.85);
+    --text-main: #ffffff;
+    --text-muted: #d1d5db;
+    --text-heading: #ffffff;
+    --accent: var(--theme-accent-contrast, var(--theme-accent));
+    --accent-hover: var(--theme-accent-hover-contrast, var(--theme-accent-hover));
+    --success: var(--theme-success-contrast, var(--theme-success));
+    --danger: var(--theme-danger-contrast, var(--theme-danger));
+    --warning: var(--theme-warning-contrast, var(--theme-warning));
+    --color-input: var(--theme-color-input-contrast, var(--theme-color-input));
+    --color-output: var(--theme-color-output-contrast, var(--theme-color-output));
+    --color-io: var(--theme-color-io-contrast, var(--theme-color-io));
+    --color-power: var(--theme-color-power-contrast, var(--theme-color-power));
+    --chip-body: #111111;
+    --chip-body2: #111111;
+    --chip-pin: #ffffff;
+    --pin-toggle-track: #000000;
+    --pin-toggle-track-active: var(--success);
+    --pin-toggle-border: #ffffff;
+    --pin-toggle-handle: #ffffff;
+    --pin-led-off-fill: #000000;
+    --pin-led-off-border: #ffffff;
+    --pin-led-on-ring: #ffffff;
+    --scrollbar-thumb: rgba(255, 255, 255, 0.35);
+    --scrollbar-track: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-text-size="large"] {
+    --root-font-size: 20px;
+    --status-bar-height: 44px;
+}

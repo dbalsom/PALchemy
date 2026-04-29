@@ -1,0 +1,7 @@
+# Trunk build artifacts
+dist
+bundle.css
+
+# Rebuilt by Stylance
+bundle.scss
+

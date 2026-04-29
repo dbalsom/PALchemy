@@ -1,0 +1,23 @@
+model = "74LS00"
+model_description = "Quad 2-input NAND gate"
+class = "logic"
+pins = 14
+voltage = 5.0
+io_voltage = 3.3
+package = "DIP"
+
+[pinout]
+1 = { type = "Input", name = "1A" }
+2 = { type = "Input", name = "1B" }
+3 = { type = "Output", name = "1Y" }
+4 = { type = "Input", name = "2A" }
+5 = { type = "Input", name = "2B" }
+6 = { type = "Output", name = "2Y" }
+7 = { type = "GND" }
+8 = { type = "Output", name = "3Y" }
+9 = { type = "Input", name = "3A" }
+10 = { type = "Input", name = "3B" }
+11 = { type = "Output", name = "4Y" }
+12 = { type = "Input", name = "4A" }
+13 = { type = "Input", name = "4B" }
+14 = { type = "VCC" }

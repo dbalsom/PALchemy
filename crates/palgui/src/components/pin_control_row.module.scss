@@ -1,0 +1,160 @@
+
+.pin_row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: var(--dip-pin-pitch);
+}
+
+:global(.left-controls) .pin_row {
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+:global(.right-controls) .pin_row {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.pin_dropdown {
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 0.9rem;
+    padding: 0.3rem 1rem;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-main);
+    width: 97px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.pin_dropdown:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.pin_dropdown:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.pin_dropdown:focus-visible {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 0 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.pin_toggle {
+    width: 34px;
+    height: 20px;
+    padding: 0;
+    background: var(--pin-toggle-track);
+    border: 2px solid var(--pin-toggle-border);
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
+    transition: background 0.3s, border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+}
+
+.pin_toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    background: var(--pin-toggle-handle);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pin_toggle.active {
+    background: var(--pin-toggle-track-active);
+}
+
+.pin_toggle.active::after {
+    transform: translateX(14px);
+}
+
+.pin_toggle:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.pin_toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22), 0 0 0 4px rgba(0, 0, 0, 0.4),
+        inset 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.pin_led {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--pin-led-off-fill);
+    border: 2px solid var(--pin-led-off-border);
+    position: relative;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.65);
+    transition: all 0.2s;
+}
+
+.pin_led.on {
+    background: var(--danger);
+    box-shadow: 0 0 8px var(--danger);
+    border-color: var(--pin-led-on-ring);
+}
+
+.pin_label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    width: 160px;
+    padding-top: 2px;
+    line-height: 1.15;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+}
+
+:global(.left-controls) .pin_label {
+    text-align: right;
+}
+
+:global(.right-controls) .pin_label {
+    text-align: left;
+}
+
+.pin_type {
+    font-size: 0.82rem;
+    width: 97px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.pin_type_input {
+    color: var(--color-input);
+}
+
+.pin_type_output {
+    color: var(--color-output);
+}
+
+.pin_type_io {
+    color: var(--color-io);
+}
+
+.pin_type_power {
+    color: var(--color-power);
+}
+
+.pin_type_ground {
+    color: var(--text-muted);
+}
+
+.pin_type_nc {
+    color: var(--border-glass);
+    opacity: 0.5;
+}

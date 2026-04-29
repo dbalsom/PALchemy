@@ -1,0 +1,36 @@
+name = "CMX"
+model = "PAL20L10"
+source = "Seequa Chameleon"
+model_description = "Combinatorial PAL, 18 inputs, 4 active low outputs"
+app_description = "Implements the CGA color multiplexer"
+class = "combinatorial_pal"
+pins = 24
+voltage = 5.0
+io_voltage = 3.3
+package = "DIP"
+
+[pinout]
+1 = { type = "Input", name = "CUR_BLINK" }
+2 = { type = "Input", name = "/CHR_BLINK" }
+3 = { type = "Input", name = "CURSOR_ON" }
+4 = { type = "Input", name = "I" }
+5 = { type = "Input", name = "R" }
+6 = { type = "Input", name = "G" }
+7 = { type = "Input", name = "B" }
+8 = { type = "Input", name = "AT7" }
+9 = { type = "Input", name = "AT6" }
+10 = { type = "Input", name = "AT5" }
+11 = { type = "Input", name = "AT4" }
+12 = { type = "GND" }
+13 = { type = "Input", name = "AT3" }
+14 = { type = "Input", name = "AT2" }
+15 = { type = "Input", name = "AT1" }
+16 = { type = "Input", name = "AT0" }
+17 = { type = "Output", name = "/OUT_B", active_low = true }
+18 = { type = "Output", name = "/OUT_G", active_low = true }
+19 = { type = "Output", name = "/OUT_I", active_low = true }
+20 = { type = "Output", name = "/OUT_R", active_low = true }
+21 = { type = "Input", name = "BLINK_EN" }
+22 = { type = "Input", name = "GFX" }
+23 = { type = "Input", name = "CHG_DOTS" }
+24 = { type = "VCC" }

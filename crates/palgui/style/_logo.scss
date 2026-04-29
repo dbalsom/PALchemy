@@ -1,0 +1,27 @@
+@mixin logo-container-base {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+@mixin logo-icon-base {
+    image-rendering: auto;
+    flex-shrink: 0;
+}
+
+@mixin pal-text-base {
+    font-weight: 700;
+    color: var(--logo-pal);
+    font-size: 1.8rem;
+    letter-spacing: -0.04em;
+}
+
+@mixin chemy-text-base {
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    font-size: 1.8rem;
+    background: linear-gradient(to right, var(--logo-chemy-start), var(--logo-chemy-end));
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
