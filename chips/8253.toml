@@ -1,0 +1,35 @@
+name = "Intel 8253"
+model = "8253"
+model_description = "Programmable interval timer"
+class = "misc"
+pins = 24
+width = 220
+voltage = 5.0
+io_voltage = 3.3
+package = "DIP"
+
+[pinout]
+1 = { type = "IO", name = "D7" }
+2 = { type = "IO", name = "D6" }
+3 = { type = "IO", name = "D5" }
+4 = { type = "IO", name = "D4" }
+5 = { type = "IO", name = "D3" }
+6 = { type = "IO", name = "D2" }
+7 = { type = "IO", name = "D1" }
+8 = { type = "IO", name = "D0" }
+9 = { type = "Input", name = "CLK0" }
+10 = { type = "Output", name = "OUT0" }
+11 = { type = "Input", name = "GATE0" }
+12 = { type = "GND" }
+13 = { type = "Output", name = "OUT1" }
+14 = { type = "Input", name = "GATE1" }
+15 = { type = "Input", name = "CLK1" }
+16 = { type = "Input", name = "GATE2" }
+17 = { type = "Output", name = "OUT2" }
+18 = { type = "Input", name = "CLK2" }
+19 = { type = "Input", name = "A0" }
+20 = { type = "Input", name = "A1" }
+21 = { type = "Input", name = "/CS", active_low = true }
+22 = { type = "Input", name = "/RD", active_low = true }
+23 = { type = "Input", name = "/WR", active_low = true }
+24 = { type = "VCC" }

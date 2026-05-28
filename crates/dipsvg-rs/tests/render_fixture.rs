@@ -78,10 +78,32 @@ fn assert_common_svg(svg: &str, case: OrientationCase) {
         assert!(svg.contains(r##"stroke="#ffffff""##));
         assert!(svg.contains(r##"fill="#ffffff" font-family="Inter, sans-serif""##));
         assert!(svg.contains(r##"fill="#ffffff" font-family="monospace""##));
+        assert!(svg.contains(r##"class="dip-pin-label" dominant-baseline="middle" fill="#ffffff""##));
     } else {
         assert!(svg.contains("var(--text-main, #f8fafc)"));
         assert!(svg.contains("var(--text-muted, #94a3b8)"));
+        assert!(svg.contains("light-dark(#0f172a, #f8fafc)"));
         assert!(svg.contains("var(--chip-body, #3a3e44)"));
+    }
+    assert!(svg.contains("IN_1"));
+    assert!(svg.contains("VCC"));
+    match case.orientation {
+        ChipOrientation::NotchUp => {
+            assert!(svg.contains(r#"text-anchor="end" x="160" y="52""#));
+            assert!(svg.contains(r#"text-anchor="start" x="380" y="52""#));
+        }
+        ChipOrientation::NotchDown => {
+            assert!(svg.contains(r#"text-anchor="start" x="380" y="448""#));
+            assert!(svg.contains(r#"text-anchor="end" x="160" y="448""#));
+        }
+        ChipOrientation::NotchLeft => {
+            assert!(svg.contains(r#"transform="rotate(90 52 380)" x="52" y="380""#));
+            assert!(svg.contains(r#"transform="rotate(-90 52 160)" x="52" y="160""#));
+        }
+        ChipOrientation::NotchRight => {
+            assert!(svg.contains(r#"transform="rotate(-90 448 160)" x="448" y="160""#));
+            assert!(svg.contains(r#"transform="rotate(90 448 380)" x="448" y="380""#));
+        }
     }
 }
 
@@ -115,9 +137,9 @@ fn orientation_cases(no_notch: bool, high_contrast: bool) -> [OrientationCase; 4
                     "PAL16L8_pin1_up.svg"
                 }
             },
-            width: r#"width="180""#,
+            width: r#"width="540""#,
             height: r#"height="500""#,
-            view_box: r#"viewBox="0 0 180 500""#,
+            view_box: r#"viewBox="0 0 540 500""#,
             transform: None,
             label_transform: None,
         },
@@ -138,10 +160,10 @@ fn orientation_cases(no_notch: bool, high_contrast: bool) -> [OrientationCase; 4
                 }
             },
             width: r#"width="500""#,
-            height: r#"height="180""#,
-            view_box: r#"viewBox="0 0 500 180""#,
-            transform: Some(r#"transform="translate(0 180) rotate(-90)""#),
-            label_transform: Some(r#"transform="rotate(90 90 250)""#),
+            height: r#"height="540""#,
+            view_box: r#"viewBox="0 0 500 540""#,
+            transform: Some(r#"transform="translate(0 540) rotate(-90)""#),
+            label_transform: Some(r#"transform="rotate(90 270 250)""#),
         },
         OrientationCase {
             orientation: ChipOrientation::NotchRight,
@@ -160,10 +182,10 @@ fn orientation_cases(no_notch: bool, high_contrast: bool) -> [OrientationCase; 4
                 }
             },
             width: r#"width="500""#,
-            height: r#"height="180""#,
-            view_box: r#"viewBox="0 0 500 180""#,
+            height: r#"height="540""#,
+            view_box: r#"viewBox="0 0 500 540""#,
             transform: Some(r#"transform="translate(500 0) rotate(90)""#),
-            label_transform: Some(r#"transform="rotate(-90 90 250)""#),
+            label_transform: Some(r#"transform="rotate(-90 270 250)""#),
         },
         OrientationCase {
             orientation: ChipOrientation::NotchDown,
@@ -181,11 +203,11 @@ fn orientation_cases(no_notch: bool, high_contrast: bool) -> [OrientationCase; 4
                     "PAL16L8_pin1_down.svg"
                 }
             },
-            width: r#"width="180""#,
+            width: r#"width="540""#,
             height: r#"height="500""#,
-            view_box: r#"viewBox="0 0 180 500""#,
-            transform: Some(r#"transform="translate(180 500) rotate(180)""#),
-            label_transform: Some(r#"transform="rotate(180 90 250)""#),
+            view_box: r#"viewBox="0 0 540 500""#,
+            transform: Some(r#"transform="translate(540 500) rotate(180)""#),
+            label_transform: Some(r#"transform="rotate(180 270 250)""#),
         },
     ]
 }

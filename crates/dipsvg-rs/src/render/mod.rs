@@ -8,6 +8,9 @@ use svg::{
 };
 
 use super::{ChipDiagram, ChipMetrics};
+use crate::types::ChipOrientation;
+
+const PIN_LABEL_FONT_FAMILY: &str = "var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)";
 
 pub struct ChipRenderer<'a> {
     diagram: &'a ChipDiagram,
@@ -29,7 +32,7 @@ impl<'a> ChipRenderer<'a> {
         let pin_count = diagram.pin_count;
         let style = &diagram.style;
         let pins_per_side = metrics.pins_per_side;
-        let svg_width = metrics.svg_width;
+        let diagram_width = metrics.diagram_width;
         let chip_height = metrics.chip_height;
         let document_width = metrics.document_width;
         let document_height = metrics.document_height;
@@ -63,6 +66,7 @@ impl<'a> ChipRenderer<'a> {
         } else {
             "var(--text-muted, #94a3b8)"
         };
+        let pin_name_label_fill = ChipRenderer::pin_name_label_fill(style);
         let pin_color = if style.high_contrast {
             "#ffffff"
         } else {
@@ -78,7 +82,7 @@ impl<'a> ChipRenderer<'a> {
             let pin_y = geometry.pin_center_y(i) - geometry.pin_stub_height / 2;
             content = content.add(
                 Rectangle::new()
-                    .set("x", 0)
+                    .set("x", metrics.chip_origin_x)
                     .set("y", pin_y)
                     .set("width", geometry.pin_stub_width + 5)
                     .set("height", geometry.pin_stub_height)
@@ -87,7 +91,10 @@ impl<'a> ChipRenderer<'a> {
             );
             content = content.add(
                 Rectangle::new()
-                    .set("x", geometry.pin_stub_width + geometry.chip_width - 5)
+                    .set(
+                        "x",
+                        metrics.chip_origin_x + geometry.pin_stub_width + geometry.chip_width - 5,
+                    )
                     .set("y", pin_y)
                     .set("width", geometry.pin_stub_width + 5)
                     .set("height", geometry.pin_stub_height)
@@ -153,8 +160,13 @@ impl<'a> ChipRenderer<'a> {
                 .add(shadow_curve);
 
             if let Some(notch_radius) = notch_radius {
-                let notch_cutout_mask =
-                    ChipRenderer::notch_cutout_mask(svg_width, chip_height, cx as f32, chip_top as f32, notch_radius);
+                let notch_cutout_mask = ChipRenderer::notch_cutout_mask(
+                    diagram_width,
+                    chip_height,
+                    cx as f32,
+                    chip_top as f32,
+                    notch_radius,
+                );
                 bevel_group = bevel_group.set("mask", "url(#chipNotchCutoutMask)");
                 content = content.add(notch_cutout_mask);
             }
@@ -233,8 +245,9 @@ impl<'a> ChipRenderer<'a> {
         for i in 0..pins_per_side {
             let y = geometry.pin_center_y(i);
             let pin_label_inset = if style.keep_labels_upright { 16 } else { 10 };
-            let left_pin_number_x = geometry.pin_stub_width + pin_label_inset;
-            let right_pin_number_x = geometry.pin_stub_width + geometry.chip_width - pin_label_inset;
+            let left_pin_number_x = metrics.chip_origin_x + geometry.pin_stub_width + pin_label_inset;
+            let right_pin_number_x =
+                metrics.chip_origin_x + geometry.pin_stub_width + geometry.chip_width - pin_label_inset;
             let upright_pin_anchor = if style.keep_labels_upright {
                 Some("middle")
             } else {
@@ -251,17 +264,8 @@ impl<'a> ChipRenderer<'a> {
             if let Some(anchor) = upright_pin_anchor {
                 left_pin_label = left_pin_label.set("text-anchor", anchor);
             }
-            content = content.add(ChipRenderer::label_text(
-                left_pin_label,
-                style,
-                left_pin_number_x,
-                y,
-            ));
-            let right_pin_anchor = if style.keep_labels_upright {
-                "middle"
-            } else {
-                "end"
-            };
+            content = content.add(ChipRenderer::label_text(left_pin_label, style, left_pin_number_x, y));
+            let right_pin_anchor = if style.keep_labels_upright { "middle" } else { "end" };
             content = content.add(ChipRenderer::label_text(
                 Text::new((pin_count - i).to_string())
                     .set("x", right_pin_number_x)
@@ -278,9 +282,12 @@ impl<'a> ChipRenderer<'a> {
             ));
         }
 
-        let content = style.orientation.upright_transform(svg_width, chip_height, content);
+        let content = style.orientation.upright_transform(diagram_width, chip_height, content);
 
         document = document.add(content);
+        if metrics.has_pin_labels {
+            document = document.add(self.pin_name_label_overlay(&pin_name_label_fill));
+        }
         document.to_string()
     }
 
@@ -297,6 +304,154 @@ impl<'a> ChipRenderer<'a> {
             .elliptical_arc_to((inner_radius, inner_radius, 0, 1, 1, cx - inner_radius, cy))
             .elliptical_arc_to((inner_radius, inner_radius, 0, 1, 1, cx + inner_radius, cy))
             .close()
+    }
+
+    fn pin_name_label_overlay(&self, fill: &str) -> Group {
+        let diagram = self.diagram;
+        let metrics = self.metrics;
+        let geometry = &diagram.geometry;
+        let pin_count = diagram.pin_count;
+        let mut labels = Group::new();
+
+        for i in 0..metrics.pins_per_side {
+            let pin_y = geometry.pin_center_y(i);
+            let left_pin = i + 1;
+            let right_pin = pin_count - i;
+
+            match diagram.style.orientation {
+                ChipOrientation::NotchUp => {
+                    if let Some(label) = diagram.pin_label(left_pin) {
+                        labels = labels.add(ChipRenderer::pin_name_label_text(
+                            label,
+                            metrics.left_pin_label_x,
+                            pin_y,
+                            "end",
+                            fill,
+                            None,
+                        ));
+                    }
+
+                    if let Some(label) = diagram.pin_label(right_pin) {
+                        labels = labels.add(ChipRenderer::pin_name_label_text(
+                            label,
+                            metrics.right_pin_label_x,
+                            pin_y,
+                            "start",
+                            fill,
+                            None,
+                        ));
+                    }
+                }
+                ChipOrientation::NotchDown => {
+                    let y = metrics.chip_height - pin_y;
+                    if let Some(label) = diagram.pin_label(left_pin) {
+                        let x = metrics.diagram_width - metrics.left_pin_label_x;
+                        labels = labels.add(ChipRenderer::pin_name_label_text(label, x, y, "start", fill, None));
+                    }
+
+                    if let Some(label) = diagram.pin_label(right_pin) {
+                        let x = metrics.diagram_width - metrics.right_pin_label_x;
+                        labels = labels.add(ChipRenderer::pin_name_label_text(label, x, y, "end", fill, None));
+                    }
+                }
+                ChipOrientation::NotchLeft => {
+                    if let Some(label) = diagram.pin_label(left_pin) {
+                        let x = pin_y;
+                        let y = metrics.diagram_width - metrics.left_pin_label_x;
+                        labels = labels.add(ChipRenderer::pin_name_label_text(
+                            label,
+                            x,
+                            y,
+                            "start",
+                            fill,
+                            Some(format!("rotate(90 {x} {y})")),
+                        ));
+                    }
+
+                    if let Some(label) = diagram.pin_label(right_pin) {
+                        let x = pin_y;
+                        let y = metrics.diagram_width - metrics.right_pin_label_x;
+                        labels = labels.add(ChipRenderer::pin_name_label_text(
+                            label,
+                            x,
+                            y,
+                            "start",
+                            fill,
+                            Some(format!("rotate(-90 {x} {y})")),
+                        ));
+                    }
+                }
+                ChipOrientation::NotchRight => {
+                    let x = metrics.chip_height - pin_y;
+                    if let Some(label) = diagram.pin_label(left_pin) {
+                        let y = metrics.left_pin_label_x;
+                        labels = labels.add(ChipRenderer::pin_name_label_text(
+                            label,
+                            x,
+                            y,
+                            "start",
+                            fill,
+                            Some(format!("rotate(-90 {x} {y})")),
+                        ));
+                    }
+
+                    if let Some(label) = diagram.pin_label(right_pin) {
+                        let y = metrics.right_pin_label_x;
+                        labels = labels.add(ChipRenderer::pin_name_label_text(
+                            label,
+                            x,
+                            y,
+                            "start",
+                            fill,
+                            Some(format!("rotate(90 {x} {y})")),
+                        ));
+                    }
+                }
+            }
+        }
+
+        labels
+    }
+
+    fn pin_name_label_text(
+        label: &super::PinLabel,
+        x: usize,
+        y: usize,
+        anchor: &str,
+        fill: &str,
+        transform: Option<String>,
+    ) -> Text {
+        let mut text = Text::new(label.text.as_str())
+            .set("class", "dip-pin-label")
+            .set("x", x)
+            .set("y", y)
+            .set("fill", fill)
+            .set("font-size", 16)
+            .set("font-weight", 700)
+            .set("font-family", PIN_LABEL_FONT_FAMILY)
+            .set("text-anchor", anchor)
+            .set("dominant-baseline", "middle");
+
+        if label.active_low {
+            text = text.set("text-decoration", "overline");
+        }
+
+        if let Some(transform) = transform {
+            text = text.set("transform", transform);
+        }
+
+        text
+    }
+
+    fn pin_name_label_fill(style: &super::ChipDiagramStyle) -> String {
+        if style.high_contrast {
+            "#ffffff".to_string()
+        } else {
+            format!(
+                "light-dark({}, {})",
+                style.pin_label_light_color, style.pin_label_dark_color
+            )
+        }
     }
 
     fn label_text(text: Text, style: &super::ChipDiagramStyle, x: usize, y: usize) -> Text {

@@ -13,6 +13,8 @@ pub struct ChipDef {
     pub app_description: Option<String>,
     pub class: String,
     pub pins: usize,
+    #[serde(default)]
+    pub width: Option<usize>,
     pub package: PackageType,
     pub voltage: f32,
     #[serde(default)]
@@ -115,6 +117,7 @@ mod tests {
             app_description: None,
             class: "logic".to_string(),
             pins: 14,
+            width: None,
             package: PackageType::DIP,
             voltage,
             io_voltage,

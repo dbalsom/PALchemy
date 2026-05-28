@@ -574,6 +574,7 @@ mod tests {
             app_description: None,
             class: "PAL".to_string(),
             pins: 20,
+            width: None,
             package: PackageType::DIP,
             voltage: 5.0,
             io_voltage: None,

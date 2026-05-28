@@ -5,19 +5,21 @@ pub mod util;
 
 use std::{fs, path::Path};
 
-use palcore::{ChipDef, PackageType};
+use palcore::{ChipDef, PackageType, PinDef, PinType};
 use thiserror::Error;
 
-pub use geometry::ChipGeometry;
+pub use geometry::{ChipGeometry, PIN_LABEL_COLUMN_WIDTH, PIN_LABEL_GAP};
 use render::ChipRenderer;
 use types::*;
 pub use util::*;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ChipDiagramStyle {
     pub high_contrast: bool,
     pub shade_angle: f32,
     pub keep_labels_upright: bool,
+    pub pin_label_light_color: String,
+    pub pin_label_dark_color: String,
 
     pub orientation: ChipOrientation,
 }
@@ -28,6 +30,8 @@ impl Default for ChipDiagramStyle {
             high_contrast: false,
             shade_angle: 45.0,
             keep_labels_upright: false,
+            pin_label_light_color: "#0f172a".to_string(),
+            pin_label_dark_color: "#f8fafc".to_string(),
             orientation: ChipOrientation::default(),
         }
     }
@@ -49,6 +53,26 @@ impl ChipDiagramStyle {
         self
     }
 
+    pub fn with_pin_label_light_color(mut self, color: impl Into<String>) -> Self {
+        self.pin_label_light_color = color.into();
+        self
+    }
+
+    pub fn with_pin_label_dark_color(mut self, color: impl Into<String>) -> Self {
+        self.pin_label_dark_color = color.into();
+        self
+    }
+
+    pub fn with_pin_label_theme_colors(
+        mut self,
+        light_color: impl Into<String>,
+        dark_color: impl Into<String>,
+    ) -> Self {
+        self.pin_label_light_color = light_color.into();
+        self.pin_label_dark_color = dark_color.into();
+        self
+    }
+
     pub fn effective_shade_angle(&self) -> f32 {
         match self.orientation {
             ChipOrientation::NotchUp => self.shade_angle,
@@ -64,7 +88,7 @@ impl ChipDiagramStyle {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ChipDiagramOptions {
     pub geometry: ChipGeometry,
     pub style: ChipDiagramStyle,
@@ -82,11 +106,61 @@ impl Default for ChipDiagramOptions {
 #[deprecated(note = "use ChipDiagramOptions instead")]
 pub type DipSvgOptions = ChipDiagramOptions;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PinLabel {
+    pub text: String,
+    pub active_low: bool,
+}
+
+impl PinLabel {
+    pub fn new(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            active_low: false,
+        }
+    }
+
+    pub fn active_low(mut self, active_low: bool) -> Self {
+        self.active_low = active_low;
+        self
+    }
+
+    fn from_pin_def(pin: usize, definition: &PinDef) -> Self {
+        let raw_text = definition
+            .name
+            .clone()
+            .unwrap_or_else(|| fallback_pin_label(pin, &definition.pin_type));
+        let (text, slash_active_low) = raw_text
+            .strip_prefix('/')
+            .map(|text| (text.to_string(), true))
+            .unwrap_or((raw_text, false));
+
+        Self {
+            text,
+            active_low: definition.active_low || slash_active_low,
+        }
+    }
+}
+
+impl From<String> for PinLabel {
+    fn from(value: String) -> Self {
+        Self::new(value)
+    }
+}
+
+impl From<&str> for PinLabel {
+    fn from(value: &str) -> Self {
+        Self::new(value)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ChipDiagram {
     name: String,
     alias: Option<String>,
     pin_count: usize,
+    pin_labels: Vec<Option<PinLabel>>,
+    chip_width: Option<usize>,
     geometry: ChipGeometry,
     style: ChipDiagramStyle,
 }
@@ -97,6 +171,8 @@ impl ChipDiagram {
             name: name.into(),
             alias: None,
             pin_count,
+            pin_labels: vec![None; pin_count],
+            chip_width: None,
             geometry: ChipGeometry::default(),
             style: ChipDiagramStyle::default(),
         }
@@ -107,7 +183,17 @@ impl ChipDiagram {
             return Err(DipSvgError::UnsupportedPackage { package: chip.package });
         }
 
-        Ok(Self::new(chip.display_name(), chip.pins).with_alias_option(chip.alias.clone()))
+        let mut diagram = Self::new(chip.display_name(), chip.pins)
+            .with_alias_option(chip.alias.clone())
+            .with_chip_width_option(chip.width)
+            .with_geometry(ChipGeometry::from_chip(chip));
+        for pin in 1..=chip.pins {
+            if let Some(definition) = chip.pinout.get(&pin.to_string()) {
+                diagram = diagram.with_pin_label(pin, PinLabel::from_pin_def(pin, definition));
+            }
+        }
+
+        Ok(diagram)
     }
 
     pub fn from_toml(input: &str) -> Result<Self, DipSvgError> {
@@ -137,17 +223,62 @@ impl ChipDiagram {
 
     pub fn with_pin_count(mut self, pin_count: usize) -> Self {
         self.pin_count = pin_count;
+        self.pin_labels.resize(pin_count, None);
+        self
+    }
+
+    pub fn with_chip_width(mut self, chip_width: usize) -> Self {
+        self.chip_width = Some(chip_width);
+        self.geometry = self.geometry.with_chip_width(chip_width);
+        self
+    }
+
+    pub fn with_chip_width_option(mut self, chip_width: Option<usize>) -> Self {
+        if let Some(chip_width) = chip_width {
+            self = self.with_chip_width(chip_width);
+        }
+        self
+    }
+
+    pub fn with_pin_label(mut self, pin: usize, label: impl Into<PinLabel>) -> Self {
+        if (1..=self.pin_count).contains(&pin) {
+            self.pin_labels[pin - 1] = Some(label.into());
+        }
+        self
+    }
+
+    pub fn with_pin_labels<I, L>(mut self, labels: I) -> Self
+    where
+        I: IntoIterator<Item = (usize, L)>,
+        L: Into<PinLabel>,
+    {
+        for (pin, label) in labels {
+            if (1..=self.pin_count).contains(&pin) {
+                self.pin_labels[pin - 1] = Some(label.into());
+            }
+        }
+        self
+    }
+
+    pub fn without_pin_labels(mut self) -> Self {
+        self.pin_labels.fill(None);
         self
     }
 
     pub fn with_options(mut self, options: ChipDiagramOptions) -> Self {
         self.geometry = options.geometry;
+        if let Some(chip_width) = self.chip_width {
+            self.geometry = self.geometry.with_chip_width(chip_width);
+        }
         self.style = options.style;
         self
     }
 
     pub fn with_geometry(mut self, geometry: ChipGeometry) -> Self {
         self.geometry = geometry;
+        if let Some(chip_width) = self.chip_width {
+            self.geometry = self.geometry.with_chip_width(chip_width);
+        }
         self
     }
 
@@ -162,6 +293,22 @@ impl ChipDiagram {
 
     pub fn pin_count(&self) -> usize {
         self.pin_count
+    }
+
+    pub fn has_pin_labels(&self) -> bool {
+        self.pin_labels.iter().any(Option::is_some)
+    }
+
+    pub fn pin_label(&self, pin: usize) -> Option<&PinLabel> {
+        pin.checked_sub(1)
+            .and_then(|index| self.pin_labels.get(index))
+            .and_then(Option::as_ref)
+    }
+
+    pub fn document_size(&self) -> Result<(usize, usize), DipSvgError> {
+        validate_pin_count(self.pin_count)?;
+        let metrics = ChipMetrics::new(self);
+        Ok((metrics.document_width, metrics.document_height))
     }
 
     pub fn render(&self) -> Result<String, DipSvgError> {
@@ -222,12 +369,16 @@ pub fn generate_dip_svg(
 #[derive(Debug, Clone, Copy)]
 struct ChipMetrics {
     pins_per_side: usize,
-    svg_width: usize,
+    diagram_width: usize,
     chip_height: usize,
     document_width: usize,
     document_height: usize,
     view_box_width: usize,
     view_box_height: usize,
+    has_pin_labels: bool,
+    chip_origin_x: usize,
+    left_pin_label_x: usize,
+    right_pin_label_x: usize,
     chip_body_height: usize,
     chip_left: usize,
     chip_top: usize,
@@ -241,16 +392,31 @@ impl ChipMetrics {
     fn new(diagram: &ChipDiagram) -> Self {
         let geometry = &diagram.geometry;
         let pins_per_side = diagram.pin_count / 2;
-        let svg_width = geometry.svg_width();
+        let has_pin_labels = diagram.has_pin_labels();
+        let package_width = geometry.svg_width();
+        let diagram_width = if has_pin_labels {
+            geometry.labeled_svg_width()
+        } else {
+            package_width
+        };
         let chip_height = geometry.chip_height(pins_per_side);
         let (document_width, document_height, view_box_width, view_box_height) = match diagram.style.orientation {
-            ChipOrientation::NotchUp | ChipOrientation::NotchDown => (svg_width, chip_height, svg_width, chip_height),
+            ChipOrientation::NotchUp | ChipOrientation::NotchDown => {
+                (diagram_width, chip_height, diagram_width, chip_height)
+            }
             ChipOrientation::NotchLeft | ChipOrientation::NotchRight => {
-                (chip_height, svg_width, chip_height, svg_width)
+                (chip_height, diagram_width, chip_height, diagram_width)
             }
         };
+        let chip_origin_x = if has_pin_labels {
+            PIN_LABEL_COLUMN_WIDTH + PIN_LABEL_GAP
+        } else {
+            0
+        };
+        let left_pin_label_x = chip_origin_x.saturating_sub(PIN_LABEL_GAP);
+        let right_pin_label_x = chip_origin_x + package_width + PIN_LABEL_GAP;
         let chip_body_height = chip_height - geometry.top_inset - geometry.bottom_inset;
-        let chip_left = geometry.pin_stub_width;
+        let chip_left = chip_origin_x + geometry.pin_stub_width;
         let chip_top = geometry.top_inset;
         let chip_right = chip_left + geometry.chip_width;
         let chip_bottom = chip_top + chip_body_height;
@@ -263,12 +429,16 @@ impl ChipMetrics {
 
         Self {
             pins_per_side,
-            svg_width,
+            diagram_width,
             chip_height,
             document_width,
             document_height,
             view_box_width,
             view_box_height,
+            has_pin_labels,
+            chip_origin_x,
+            left_pin_label_x,
+            right_pin_label_x,
             chip_body_height,
             chip_left,
             chip_top,
@@ -277,6 +447,17 @@ impl ChipMetrics {
             cx,
             notch_radius,
         }
+    }
+}
+
+fn fallback_pin_label(pin: usize, pin_type: &PinType) -> String {
+    match pin_type {
+        PinType::Power => "VCC".to_string(),
+        PinType::Ground => "GND".to_string(),
+        PinType::Vpp => "VPP".to_string(),
+        PinType::OutputEnable => "OE".to_string(),
+        PinType::NotConnected => "NC".to_string(),
+        PinType::Input | PinType::Output | PinType::InputOutput => format!("P{pin}"),
     }
 }
 
@@ -296,6 +477,7 @@ mod tests {
     };
 
     const PAL16L8: &str = include_str!("../../../chips/PAL16L8.toml");
+    const INTEL_8253: &str = include_str!("../../../chips/8253.toml");
 
     #[test]
     fn parses_existing_chip_toml_and_uses_model_as_default_name() {
@@ -310,12 +492,77 @@ mod tests {
         let svg = render_toml(PAL16L8, ChipDiagramOptions::default()).expect("chip should render");
 
         assert!(svg.starts_with("<svg "));
-        assert!(svg.contains(r#"width="180""#));
+        assert!(svg.contains(r#"width="540""#));
         assert!(svg.contains(r#"height="500""#));
-        assert!(svg.contains(r#"viewBox="0 0 180 500""#));
+        assert!(svg.contains(r#"viewBox="0 0 540 500""#));
         assert!(svg.contains("PAL16L8"));
         assert!(svg.contains("\n1\n</text>"));
         assert!(svg.contains("\n20\n</text>"));
+        assert!(svg.contains("IN_1"));
+        assert!(svg.contains("OUT_1"));
+        assert!(svg.contains("GND"));
+        assert!(svg.contains("VCC"));
+        assert!(svg.contains(r#"class="dip-pin-label""#));
+        assert!(svg.contains(r#"fill="light-dark(#0f172a, #f8fafc)""#));
+        assert!(svg.contains(r#"text-decoration="overline""#));
+    }
+
+    #[test]
+    fn toml_width_sets_chip_geometry_width() {
+        let toml = r#"
+          model = "WIDE24"
+          model_description = "Wide DIP test"
+          class = "logic"
+          pins = 24
+          width = 220
+          voltage = 5.0
+          package = "DIP"
+
+          [pinout]
+          1 = { type = "IO", name = "D7" }
+          12 = { type = "GND" }
+          24 = { type = "VCC" }
+          "#;
+
+        let diagram = ChipDiagram::from_toml(toml).expect("chip TOML should parse");
+        assert_eq!(diagram.geometry().chip_width, 220);
+
+        let svg = render_toml(toml, ChipDiagramOptions::default()).expect("chip should render");
+        assert!(svg.contains(r#"width="610""#));
+        assert!(svg.contains(r#"viewBox="0 0 610 588""#));
+        assert!(svg.contains(r#"width="220" x="195""#));
+    }
+
+    #[test]
+    fn renders_8253_with_custom_chip_width() {
+        let diagram = ChipDiagram::from_toml(INTEL_8253).expect("8253 TOML should parse");
+        assert_eq!(diagram.geometry().chip_width, 220);
+
+        let svg = render_toml(INTEL_8253, ChipDiagramOptions::default()).expect("8253 should render");
+        assert!(svg.contains(r#"width="610""#));
+        assert!(svg.contains(r#"width="220" x="195""#));
+        assert!(svg.contains("Intel 8253"));
+        assert!(svg.contains("GATE0"));
+        assert!(svg.contains("CS"));
+        assert!(svg.contains(r#"text-decoration="overline""#));
+    }
+
+    #[test]
+    fn chip_diagram_builder_can_render_custom_pin_labels() {
+        let svg = ChipDiagram::new("CUSTOM", 14)
+            .with_pin_label(1, "A0")
+            .with_pin_label(14, "VCC")
+            .with_options(ChipDiagramOptions {
+                geometry: ChipGeometry::default(),
+                style: ChipDiagramStyle::default().with_pin_label_theme_colors("#111111", "#eeeeee"),
+            })
+            .render()
+            .expect("builder should render");
+
+        assert!(svg.contains(r#"width="540""#));
+        assert!(svg.contains(r#"fill="light-dark(#111111, #eeeeee)""#));
+        assert!(svg.contains("A0"));
+        assert!(svg.contains("VCC"));
     }
 
     #[test]

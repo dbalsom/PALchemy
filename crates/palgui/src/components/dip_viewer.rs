@@ -33,8 +33,9 @@ pub fn DipViewer(
 
             let pin_count = chip.pins as usize;
             let pins_per_side = pin_count / 2;
-            let layout = ChipGeometry::default();
+            let layout = ChipGeometry::from_chip(&chip);
             let chip_height = layout.chip_height(pins_per_side);
+            let diagram_width = layout.labeled_svg_width();
 
             let left_pins: Vec<u8> = (1..=pins_per_side as u8).collect();
             let right_pins: Vec<u8> = (pins_per_side as u8 + 1..=pin_count as u8).rev().collect();
@@ -45,7 +46,7 @@ pub fn DipViewer(
                 layout.top_inset,
                 layout.bottom_inset,
                 chip_height,
-                layout.svg_width()
+                diagram_width
             );
 
             let chip_for_left = chip.clone();
