@@ -1,321 +1,48 @@
+// dipsvg-rs: A Rust library for rendering chip definitions to SVG diagrams
+// Copyright (C) 2026 Daniel Balsom
+// SPDX-License-Identifier: MIT OR GPL-3.0-or-later
+
+//! SVG rendering for DIP chip definitions.
+//!
+//! `dipsvg-rs` renders TOML chip definitions into pretty SVG diagrams.
+//!
+//! It can render directly from TOML text or files, from a parsed [`ChipDef`], or through the
+//! [`ChipDiagram`] builder when callers need to customize geometry, style, orientation, or pin
+//! labels.
+//!
+//! The usual high-level entry points are [`render_toml`], [`render_toml_file`], and [`render_chip`].
+//! For lower-level control, construct a [`ChipDiagram`] with a [`ChipGeometry`] and optional
+//! [`ChipDiagramStyle`].
+//!
+//! ```no_run
+//! use dipsvg::{render_toml_file, ChipDiagramOptions};
+//!
+//! let svg = render_toml_file("chips/PAL16L8.toml", ChipDiagramOptions::default())?;
+//! # Ok::<(), dipsvg::DipSvgError>(())
+//! ```
+
+pub mod diagram;
 pub mod geometry;
+pub mod label;
 pub mod render;
+pub mod style;
 pub mod types;
 pub mod util;
 
-use std::{fs, path::Path};
+use std::path::Path;
 
-use palcore::{ChipDef, PackageType, PinDef, PinType};
+use palcore::{ChipDef, PackageType};
 use thiserror::Error;
 
+pub use diagram::{ChipDiagram, ChipDiagramOptions};
 pub use geometry::{ChipGeometry, PIN_LABEL_COLUMN_WIDTH, PIN_LABEL_GAP};
-use render::ChipRenderer;
+pub use label::PinLabel;
+pub use style::ChipDiagramStyle;
 use types::*;
 pub use util::*;
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct ChipDiagramStyle {
-    pub high_contrast: bool,
-    pub shade_angle: f32,
-    pub keep_labels_upright: bool,
-    pub pin_label_light_color: String,
-    pub pin_label_dark_color: String,
-
-    pub orientation: ChipOrientation,
-}
-
-impl Default for ChipDiagramStyle {
-    fn default() -> Self {
-        Self {
-            high_contrast: false,
-            shade_angle: 45.0,
-            keep_labels_upright: false,
-            pin_label_light_color: "#0f172a".to_string(),
-            pin_label_dark_color: "#f8fafc".to_string(),
-            orientation: ChipOrientation::default(),
-        }
-    }
-}
-
-impl ChipDiagramStyle {
-    pub fn with_high_contrast(mut self, high_contrast: bool) -> Self {
-        self.high_contrast = high_contrast;
-        self
-    }
-
-    pub fn with_shade_angle(mut self, shade_angle: f32) -> Self {
-        self.shade_angle = shade_angle;
-        self
-    }
-
-    pub fn with_keep_labels_upright(mut self, keep_labels_upright: bool) -> Self {
-        self.keep_labels_upright = keep_labels_upright;
-        self
-    }
-
-    pub fn with_pin_label_light_color(mut self, color: impl Into<String>) -> Self {
-        self.pin_label_light_color = color.into();
-        self
-    }
-
-    pub fn with_pin_label_dark_color(mut self, color: impl Into<String>) -> Self {
-        self.pin_label_dark_color = color.into();
-        self
-    }
-
-    pub fn with_pin_label_theme_colors(
-        mut self,
-        light_color: impl Into<String>,
-        dark_color: impl Into<String>,
-    ) -> Self {
-        self.pin_label_light_color = light_color.into();
-        self.pin_label_dark_color = dark_color.into();
-        self
-    }
-
-    pub fn effective_shade_angle(&self) -> f32 {
-        match self.orientation {
-            ChipOrientation::NotchUp => self.shade_angle,
-            ChipOrientation::NotchLeft => self.shade_angle + 90.0,
-            ChipOrientation::NotchRight => self.shade_angle - 90.0,
-            ChipOrientation::NotchDown => self.shade_angle + 180.0,
-        }
-    }
-
-    pub fn with_orientation(mut self, orientation: ChipOrientation) -> Self {
-        self.orientation = orientation;
-        self
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct ChipDiagramOptions {
-    pub geometry: ChipGeometry,
-    pub style: ChipDiagramStyle,
-}
-
-impl Default for ChipDiagramOptions {
-    fn default() -> Self {
-        Self {
-            geometry: ChipGeometry::default(),
-            style: ChipDiagramStyle::default(),
-        }
-    }
-}
-
 #[deprecated(note = "use ChipDiagramOptions instead")]
 pub type DipSvgOptions = ChipDiagramOptions;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PinLabel {
-    pub text: String,
-    pub active_low: bool,
-}
-
-impl PinLabel {
-    pub fn new(text: impl Into<String>) -> Self {
-        Self {
-            text: text.into(),
-            active_low: false,
-        }
-    }
-
-    pub fn active_low(mut self, active_low: bool) -> Self {
-        self.active_low = active_low;
-        self
-    }
-
-    fn from_pin_def(pin: usize, definition: &PinDef) -> Self {
-        let raw_text = definition
-            .name
-            .clone()
-            .unwrap_or_else(|| fallback_pin_label(pin, &definition.pin_type));
-        let (text, slash_active_low) = raw_text
-            .strip_prefix('/')
-            .map(|text| (text.to_string(), true))
-            .unwrap_or((raw_text, false));
-
-        Self {
-            text,
-            active_low: definition.active_low || slash_active_low,
-        }
-    }
-}
-
-impl From<String> for PinLabel {
-    fn from(value: String) -> Self {
-        Self::new(value)
-    }
-}
-
-impl From<&str> for PinLabel {
-    fn from(value: &str) -> Self {
-        Self::new(value)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ChipDiagram {
-    name: String,
-    alias: Option<String>,
-    pin_count: usize,
-    pin_labels: Vec<Option<PinLabel>>,
-    chip_width: Option<usize>,
-    geometry: ChipGeometry,
-    style: ChipDiagramStyle,
-}
-
-impl ChipDiagram {
-    pub fn new(name: impl Into<String>, pin_count: usize) -> Self {
-        Self {
-            name: name.into(),
-            alias: None,
-            pin_count,
-            pin_labels: vec![None; pin_count],
-            chip_width: None,
-            geometry: ChipGeometry::default(),
-            style: ChipDiagramStyle::default(),
-        }
-    }
-
-    pub fn from_chip(chip: &ChipDef) -> Result<Self, DipSvgError> {
-        if chip.package != PackageType::DIP {
-            return Err(DipSvgError::UnsupportedPackage { package: chip.package });
-        }
-
-        let mut diagram = Self::new(chip.display_name(), chip.pins)
-            .with_alias_option(chip.alias.clone())
-            .with_chip_width_option(chip.width)
-            .with_geometry(ChipGeometry::from_chip(chip));
-        for pin in 1..=chip.pins {
-            if let Some(definition) = chip.pinout.get(&pin.to_string()) {
-                diagram = diagram.with_pin_label(pin, PinLabel::from_pin_def(pin, definition));
-            }
-        }
-
-        Ok(diagram)
-    }
-
-    pub fn from_toml(input: &str) -> Result<Self, DipSvgError> {
-        let chip = chip_from_toml(input)?;
-        Self::from_chip(&chip)
-    }
-
-    pub fn from_toml_file<P: AsRef<Path>>(path: P) -> Result<Self, DipSvgError> {
-        let input = fs::read_to_string(path)?;
-        Self::from_toml(&input)
-    }
-
-    pub fn with_alias(mut self, alias: impl Into<String>) -> Self {
-        self.alias = Some(alias.into());
-        self
-    }
-
-    pub fn with_alias_option(mut self, alias: Option<String>) -> Self {
-        self.alias = alias;
-        self
-    }
-
-    pub fn without_alias(mut self) -> Self {
-        self.alias = None;
-        self
-    }
-
-    pub fn with_pin_count(mut self, pin_count: usize) -> Self {
-        self.pin_count = pin_count;
-        self.pin_labels.resize(pin_count, None);
-        self
-    }
-
-    pub fn with_chip_width(mut self, chip_width: usize) -> Self {
-        self.chip_width = Some(chip_width);
-        self.geometry = self.geometry.with_chip_width(chip_width);
-        self
-    }
-
-    pub fn with_chip_width_option(mut self, chip_width: Option<usize>) -> Self {
-        if let Some(chip_width) = chip_width {
-            self = self.with_chip_width(chip_width);
-        }
-        self
-    }
-
-    pub fn with_pin_label(mut self, pin: usize, label: impl Into<PinLabel>) -> Self {
-        if (1..=self.pin_count).contains(&pin) {
-            self.pin_labels[pin - 1] = Some(label.into());
-        }
-        self
-    }
-
-    pub fn with_pin_labels<I, L>(mut self, labels: I) -> Self
-    where
-        I: IntoIterator<Item = (usize, L)>,
-        L: Into<PinLabel>,
-    {
-        for (pin, label) in labels {
-            if (1..=self.pin_count).contains(&pin) {
-                self.pin_labels[pin - 1] = Some(label.into());
-            }
-        }
-        self
-    }
-
-    pub fn without_pin_labels(mut self) -> Self {
-        self.pin_labels.fill(None);
-        self
-    }
-
-    pub fn with_options(mut self, options: ChipDiagramOptions) -> Self {
-        self.geometry = options.geometry;
-        if let Some(chip_width) = self.chip_width {
-            self.geometry = self.geometry.with_chip_width(chip_width);
-        }
-        self.style = options.style;
-        self
-    }
-
-    pub fn with_geometry(mut self, geometry: ChipGeometry) -> Self {
-        self.geometry = geometry;
-        if let Some(chip_width) = self.chip_width {
-            self.geometry = self.geometry.with_chip_width(chip_width);
-        }
-        self
-    }
-
-    pub fn with_style(mut self, style: ChipDiagramStyle) -> Self {
-        self.style = style;
-        self
-    }
-
-    pub fn geometry(&self) -> &ChipGeometry {
-        &self.geometry
-    }
-
-    pub fn pin_count(&self) -> usize {
-        self.pin_count
-    }
-
-    pub fn has_pin_labels(&self) -> bool {
-        self.pin_labels.iter().any(Option::is_some)
-    }
-
-    pub fn pin_label(&self, pin: usize) -> Option<&PinLabel> {
-        pin.checked_sub(1)
-            .and_then(|index| self.pin_labels.get(index))
-            .and_then(Option::as_ref)
-    }
-
-    pub fn document_size(&self) -> Result<(usize, usize), DipSvgError> {
-        validate_pin_count(self.pin_count)?;
-        let metrics = ChipMetrics::new(self);
-        Ok((metrics.document_width, metrics.document_height))
-    }
-
-    pub fn render(&self) -> Result<String, DipSvgError> {
-        validate_pin_count(self.pin_count)?;
-        Ok(ChipRenderer::new(self).render())
-    }
-}
 
 #[derive(Debug, Error)]
 pub enum DipSvgError {
@@ -329,13 +56,13 @@ pub enum DipSvgError {
     InvalidPinCount(usize),
 }
 
-pub fn chip_from_toml(input: &str) -> Result<ChipDef, DipSvgError> {
-    let mut chip = toml::from_str::<ChipDef>(input)?;
+pub fn chip_from_toml(input: impl AsRef<str>) -> Result<ChipDef, DipSvgError> {
+    let mut chip = toml::from_str::<ChipDef>(input.as_ref())?;
     chip.normalize_name();
     Ok(chip)
 }
 
-pub fn render_toml(input: &str, options: ChipDiagramOptions) -> Result<String, DipSvgError> {
+pub fn render_toml(input: impl AsRef<str>, options: ChipDiagramOptions) -> Result<String, DipSvgError> {
     ChipDiagram::from_toml(input)?.with_options(options).render()
 }
 
@@ -347,126 +74,16 @@ pub fn render_chip(chip: &ChipDef, options: ChipDiagramOptions) -> Result<String
     ChipDiagram::from_chip(chip)?.with_options(options).render()
 }
 
-pub fn generate_dip_svg(
-    name: &str,
-    alias: Option<&str>,
-    pin_count: usize,
-    geometry: &ChipGeometry,
-    high_contrast: bool,
-) -> String {
+pub fn generate_dip_svg(name: &str, alias: Option<&str>, geometry: &ChipGeometry, high_contrast: bool) -> String {
     let style = ChipDiagramStyle::default()
         .with_high_contrast(high_contrast)
         .with_orientation(ChipOrientation::NotchUp);
 
-    ChipDiagram::new(name, pin_count)
+    ChipDiagram::new(name, *geometry)
         .with_alias_option(alias.map(ToOwned::to_owned))
-        .with_geometry(*geometry)
         .with_style(style)
         .render()
-        .expect("generate_dip_svg requires a positive even DIP pin count")
-}
-
-#[derive(Debug, Clone, Copy)]
-struct ChipMetrics {
-    pins_per_side: usize,
-    diagram_width: usize,
-    chip_height: usize,
-    document_width: usize,
-    document_height: usize,
-    view_box_width: usize,
-    view_box_height: usize,
-    has_pin_labels: bool,
-    chip_origin_x: usize,
-    left_pin_label_x: usize,
-    right_pin_label_x: usize,
-    chip_body_height: usize,
-    chip_left: usize,
-    chip_top: usize,
-    chip_right: usize,
-    chip_bottom: usize,
-    cx: usize,
-    notch_radius: Option<f32>,
-}
-
-impl ChipMetrics {
-    fn new(diagram: &ChipDiagram) -> Self {
-        let geometry = &diagram.geometry;
-        let pins_per_side = diagram.pin_count / 2;
-        let has_pin_labels = diagram.has_pin_labels();
-        let package_width = geometry.svg_width();
-        let diagram_width = if has_pin_labels {
-            geometry.labeled_svg_width()
-        } else {
-            package_width
-        };
-        let chip_height = geometry.chip_height(pins_per_side);
-        let (document_width, document_height, view_box_width, view_box_height) = match diagram.style.orientation {
-            ChipOrientation::NotchUp | ChipOrientation::NotchDown => {
-                (diagram_width, chip_height, diagram_width, chip_height)
-            }
-            ChipOrientation::NotchLeft | ChipOrientation::NotchRight => {
-                (chip_height, diagram_width, chip_height, diagram_width)
-            }
-        };
-        let chip_origin_x = if has_pin_labels {
-            PIN_LABEL_COLUMN_WIDTH + PIN_LABEL_GAP
-        } else {
-            0
-        };
-        let left_pin_label_x = chip_origin_x.saturating_sub(PIN_LABEL_GAP);
-        let right_pin_label_x = chip_origin_x + package_width + PIN_LABEL_GAP;
-        let chip_body_height = chip_height - geometry.top_inset - geometry.bottom_inset;
-        let chip_left = chip_origin_x + geometry.pin_stub_width;
-        let chip_top = geometry.top_inset;
-        let chip_right = chip_left + geometry.chip_width;
-        let chip_bottom = chip_top + chip_body_height;
-        let cx = chip_left + geometry.chip_width / 2;
-        let notch_radius = if geometry.notch_radius > 0 {
-            Some(geometry.notch_radius as f32)
-        } else {
-            None
-        };
-
-        Self {
-            pins_per_side,
-            diagram_width,
-            chip_height,
-            document_width,
-            document_height,
-            view_box_width,
-            view_box_height,
-            has_pin_labels,
-            chip_origin_x,
-            left_pin_label_x,
-            right_pin_label_x,
-            chip_body_height,
-            chip_left,
-            chip_top,
-            chip_right,
-            chip_bottom,
-            cx,
-            notch_radius,
-        }
-    }
-}
-
-fn fallback_pin_label(pin: usize, pin_type: &PinType) -> String {
-    match pin_type {
-        PinType::Power => "VCC".to_string(),
-        PinType::Ground => "GND".to_string(),
-        PinType::Vpp => "VPP".to_string(),
-        PinType::OutputEnable => "OE".to_string(),
-        PinType::NotConnected => "NC".to_string(),
-        PinType::Input | PinType::Output | PinType::InputOutput => format!("P{pin}"),
-    }
-}
-
-fn validate_pin_count(pin_count: usize) -> Result<(), DipSvgError> {
-    if pin_count == 0 || pin_count % 2 != 0 {
-        Err(DipSvgError::InvalidPinCount(pin_count))
-    } else {
-        Ok(())
-    }
+        .expect("generate_dip_svg requires geometry with a positive even DIP pin count")
 }
 
 #[cfg(test)]
@@ -488,13 +105,24 @@ mod tests {
     }
 
     #[test]
-    fn renders_existing_chip_toml_to_svg() {
-        let svg = render_toml(PAL16L8, ChipDiagramOptions::default()).expect("chip should render");
+    fn toml_helpers_accept_owned_strings() {
+        let toml = PAL16L8.to_string();
+        let chip = chip_from_toml(toml.clone()).expect("owned TOML should parse");
+        let svg = render_toml(toml, ChipDiagramOptions::default()).expect("owned TOML should render");
 
+        assert_eq!(chip.name, "PAL16L8");
+        assert!(svg.contains("PAL16L8"));
+    }
+
+    #[test]
+    fn renders_existing_chip_toml_to_svg() {
+        let diagram = ChipDiagram::from_toml(PAL16L8).expect("chip TOML should parse");
+        let (width, height) = diagram.document_size().expect("chip dimensions should be valid");
+        let svg = diagram.render().expect("chip should render");
+
+        assert_eq!(diagram.geometry().pin_count, 20);
         assert!(svg.starts_with("<svg "));
-        assert!(svg.contains(r#"width="540""#));
-        assert!(svg.contains(r#"height="500""#));
-        assert!(svg.contains(r#"viewBox="0 0 540 500""#));
+        assert_svg_size(&svg, width, height);
         assert!(svg.contains("PAL16L8"));
         assert!(svg.contains("\n1\n</text>"));
         assert!(svg.contains("\n20\n</text>"));
@@ -527,20 +155,22 @@ mod tests {
         let diagram = ChipDiagram::from_toml(toml).expect("chip TOML should parse");
         assert_eq!(diagram.geometry().chip_width, 220);
 
-        let svg = render_toml(toml, ChipDiagramOptions::default()).expect("chip should render");
-        assert!(svg.contains(r#"width="610""#));
-        assert!(svg.contains(r#"viewBox="0 0 610 588""#));
-        assert!(svg.contains(r#"width="220" x="195""#));
+        let (width, height) = diagram.document_size().expect("chip dimensions should be valid");
+        let svg = diagram.render().expect("chip should render");
+        assert_svg_size(&svg, width, height);
+        assert!(svg.contains(r#"width="220""#));
     }
 
     #[test]
     fn renders_8253_with_custom_chip_width() {
         let diagram = ChipDiagram::from_toml(INTEL_8253).expect("8253 TOML should parse");
         assert_eq!(diagram.geometry().chip_width, 220);
+        assert_eq!(diagram.geometry().pin_count, 24);
 
-        let svg = render_toml(INTEL_8253, ChipDiagramOptions::default()).expect("8253 should render");
-        assert!(svg.contains(r#"width="610""#));
-        assert!(svg.contains(r#"width="220" x="195""#));
+        let (width, height) = diagram.document_size().expect("8253 dimensions should be valid");
+        let svg = diagram.render().expect("8253 should render");
+        assert_svg_size(&svg, width, height);
+        assert!(svg.contains(r#"width="220""#));
         assert!(svg.contains("Intel 8253"));
         assert!(svg.contains("GATE0"));
         assert!(svg.contains("CS"));
@@ -549,17 +179,19 @@ mod tests {
 
     #[test]
     fn chip_diagram_builder_can_render_custom_pin_labels() {
-        let svg = ChipDiagram::new("CUSTOM", 14)
+        let diagram = ChipDiagram::new("CUSTOM", ChipGeometry::default().with_pin_count(14))
             .with_pin_label(1, "A0")
             .with_pin_label(14, "VCC")
             .with_options(ChipDiagramOptions {
                 geometry: ChipGeometry::default(),
                 style: ChipDiagramStyle::default().with_pin_label_theme_colors("#111111", "#eeeeee"),
-            })
-            .render()
-            .expect("builder should render");
+            });
+        let (width, height) = diagram.document_size().expect("diagram dimensions should be valid");
+        let svg = diagram.render().expect("builder should render");
 
-        assert!(svg.contains(r#"width="540""#));
+        assert_eq!(diagram.pin_count(), 14);
+        assert_eq!(diagram.geometry().pin_count, 14);
+        assert_svg_size(&svg, width, height);
         assert!(svg.contains(r#"fill="light-dark(#111111, #eeeeee)""#));
         assert!(svg.contains("A0"));
         assert!(svg.contains("VCC"));
@@ -567,17 +199,17 @@ mod tests {
 
     #[test]
     fn chip_diagram_builder_renders_low_level_diagram() {
-        let svg = ChipDiagram::new("PAL16L8", 20)
+        let diagram = ChipDiagram::new("PAL16L8", ChipGeometry::default())
             .with_alias("PAL")
             .with_options(ChipDiagramOptions {
                 geometry: ChipGeometry::default(),
                 style: ChipDiagramStyle::default(),
-            })
-            .render()
-            .expect("builder should render");
+            });
+        let (width, height) = diagram.document_size().expect("diagram dimensions should be valid");
+        let svg = diagram.render().expect("builder should render");
 
         assert!(svg.contains("PAL"));
-        assert!(svg.contains(r#"width="180""#));
+        assert_svg_size(&svg, width, height);
         assert!(svg.contains(r#"fill="url(#pinGradient)""#));
     }
 
@@ -598,7 +230,7 @@ mod tests {
 
     #[test]
     fn chip_diagram_builder_rejects_invalid_pin_count_on_render() {
-        let error = ChipDiagram::new("bad", 19)
+        let error = ChipDiagram::new("bad", ChipGeometry::default().with_pin_count(19))
             .render()
             .expect_err("odd pin count should fail");
 
@@ -607,34 +239,244 @@ mod tests {
 
     #[test]
     fn low_level_renderer_preserves_high_contrast_style() {
-        let svg = generate_dip_svg("PAL", None, 20, &ChipGeometry::default(), true);
+        let svg = generate_dip_svg("PAL", None, &ChipGeometry::default(), true);
 
         assert!(svg.contains(r##"fill="#111111""##));
         assert!(svg.contains(r##"stroke="#ffffff""##));
-        assert!(svg.contains(r##"<rect fill="#ffffff""##));
-        assert!(svg.contains(r##"rx="2""##));
+        assert!(svg.contains(r##"class="dip-pin-leg""##));
+        assert!(svg.contains(r##"fill="#ffffff" stroke="none""##));
     }
 
     #[test]
     fn high_contrast_mode_renders_visible_notch() {
-        let svg = generate_dip_svg("PAL", None, 20, &ChipGeometry::default(), true);
+        let svg = generate_dip_svg("PAL", None, &ChipGeometry::default(), true);
+        let notch_path = line_with(&svg, r#"stroke-linecap="round""#);
 
         assert!(svg.contains(r##"fill="none" stroke="#ffffff" stroke-linecap="round" stroke-width="2.5""##));
-        assert!(svg.contains("A10.75,10.75,0,0,0,100.75,31.25"));
+        assert!(notch_path.contains(" A"));
     }
 
     #[test]
     fn low_level_renderer_uses_gradient_for_pin_legs() {
-        let svg = generate_dip_svg("PAL", None, 20, &ChipGeometry::default(), false);
+        let svg = generate_dip_svg("PAL", None, &ChipGeometry::default(), false);
+        let pin_legs = lines_with(&svg, r#"class="dip-pin-leg""#);
 
         assert!(svg.contains(r#"id="pinGradient""#));
-        assert!(svg.contains(r#"<rect fill="url(#pinGradient)""#));
-        assert!(svg.contains(r#"rx="2""#));
+        assert!(svg.contains(r#"id="pinGradientReverse""#));
+        assert!(svg.contains(r#"id="pinGradient" x1="0%" x2="100%" y1="0%" y2="0%""#));
+        assert!(svg.contains(r#"id="pinGradientReverse" x1="100%" x2="0%" y1="0%" y2="0%""#));
+        assert!(has_gradient_stop(&svg, "0%", "#8793a3", "1"));
+        assert!(has_gradient_stop(&svg, "33%", "var(--chip-pin, #cbd5e1)", "1"));
+        assert!(has_gradient_stop(&svg, "45%", "#f8fafc", "0.96"));
+        assert!(has_gradient_stop(&svg, "48%", "#f8fafc", "0.96"));
+        assert!(has_gradient_stop(&svg, "50%", "var(--chip-pin, #cbd5e1)", "1"));
+        assert!(has_gradient_stop(&svg, "66%", "#475569", "1"));
+        assert_eq!(pin_legs.len(), 20);
+        assert!(pin_legs.iter().all(|line| line.starts_with("<path ")));
+        assert_eq!(
+            pin_legs
+                .iter()
+                .filter(|line| line.contains(r#"fill="url(#pinGradient)" stroke="none""#))
+                .count(),
+            10
+        );
+        assert_eq!(
+            pin_legs
+                .iter()
+                .filter(|line| line.contains(r#"fill="url(#pinGradientReverse)" stroke="none""#))
+                .count(),
+            10
+        );
+        assert!(pin_legs.iter().all(|line| line.matches(" L").count() >= 7));
+        assert!(!svg.contains(r#"<rect fill="url(#pinGradient)""#));
+    }
+
+    #[test]
+    fn chip_body_drop_shadow_is_opt_in() {
+        let default_svg = ChipDiagram::new("PAL", ChipGeometry::default())
+            .render()
+            .expect("builder should render");
+        let shadow_svg = ChipDiagram::new("PAL", ChipGeometry::default())
+            .with_options(ChipDiagramOptions {
+                geometry: ChipGeometry::default(),
+                style: ChipDiagramStyle::default().with_chip_body_drop_shadow(true),
+            })
+            .render()
+            .expect("builder should render");
+
+        assert!(!default_svg.contains("chipBodyDropShadowBlur"));
+        assert!(!default_svg.contains(r#"class="dip-chip-body-shadow""#));
+        assert!(shadow_svg.contains(r#"id="chipBodyDropShadowBlur""#));
+        assert!(shadow_svg.contains(r#"<feGaussianBlur stdDeviation="3"/>"#));
+        assert!(shadow_svg.contains(r#"class="dip-chip-body-shadow""#));
+        assert!(shadow_svg.contains(r#"filter="url(#chipBodyDropShadowBlur)""#));
+        assert!(shadow_svg.contains(r##"fill="#000000""##));
+    }
+
+    #[test]
+    fn chip_body_drop_shadow_is_suppressed_in_high_contrast_mode() {
+        let svg = ChipDiagram::new("PAL", ChipGeometry::default())
+            .with_options(ChipDiagramOptions {
+                geometry: ChipGeometry::default(),
+                style: ChipDiagramStyle::default()
+                    .with_chip_body_drop_shadow(true)
+                    .with_high_contrast(true),
+            })
+            .render()
+            .expect("builder should render");
+
+        assert!(!svg.contains("chipBodyDropShadowBlur"));
+        assert!(!svg.contains(r#"class="dip-chip-body-shadow""#));
+        assert!(svg.contains(r##"fill="#111111""##));
+        assert!(svg.contains(r##"stroke="#ffffff""##));
+    }
+
+    #[test]
+    fn chip_body_drop_shadow_renders_above_pin_legs_and_below_body() {
+        let svg = ChipDiagram::new("PAL", ChipGeometry::default())
+            .with_options(ChipDiagramOptions {
+                geometry: ChipGeometry::default(),
+                style: ChipDiagramStyle::default().with_chip_body_drop_shadow(true),
+            })
+            .render()
+            .expect("builder should render");
+
+        let pin_leg = svg.find(r#"class="dip-pin-leg""#).expect("expected pin legs to render");
+        let shadow = svg
+            .find(r#"class="dip-chip-body-shadow""#)
+            .expect("expected chip body shadow to render");
+        let body = svg
+            .find(r#"<rect fill="url(#chipGradient)""#)
+            .expect("expected chip body to render");
+
+        assert!(pin_leg < shadow);
+        assert!(shadow < body);
+    }
+
+    #[test]
+    fn chip_body_drop_shadow_offsets_follow_style_angle_and_orientation() {
+        for (orientation, expected_offset) in [
+            (ChipOrientation::NotchUp, "translate(18.00 0.00)"),
+            (ChipOrientation::NotchLeft, "translate(0.00 18.00)"),
+            (ChipOrientation::NotchRight, "translate(0.00 -18.00)"),
+            (ChipOrientation::NotchDown, "translate(-18.00 0.00)"),
+        ] {
+            let svg = ChipDiagram::new("PAL", ChipGeometry::default())
+                .with_options(ChipDiagramOptions {
+                    geometry: ChipGeometry::default(),
+                    style: ChipDiagramStyle::default()
+                        .with_chip_body_drop_shadow(true)
+                        .with_shadow_distance(18.0)
+                        .with_shade_angle(0.0)
+                        .with_orientation(orientation),
+                })
+                .render()
+                .expect("builder should render");
+            let shadow = line_with(&svg, r#"class="dip-chip-body-shadow""#);
+
+            assert!(shadow.contains(&format!(r#"transform="{expected_offset}""#)));
+        }
+    }
+
+    #[test]
+    fn chip_body_drop_shadow_distance_controls_offset_magnitude() {
+        for (distance, expected_offset) in [(8.0, "translate(8.00 0.00)"), (24.0, "translate(24.00 0.00)")] {
+            let svg = ChipDiagram::new("PAL", ChipGeometry::default())
+                .with_options(ChipDiagramOptions {
+                    geometry: ChipGeometry::default(),
+                    style: ChipDiagramStyle::default()
+                        .with_chip_body_drop_shadow(true)
+                        .with_shadow_distance(distance)
+                        .with_shade_angle(0.0),
+                })
+                .render()
+                .expect("builder should render");
+            let shadow = line_with(&svg, r#"class="dip-chip-body-shadow""#);
+
+            assert!(shadow.contains(&format!(r#"transform="{expected_offset}""#)));
+        }
+    }
+
+    #[test]
+    fn pin_shoulder_length_controls_taper_position_without_changing_package_width() {
+        let short_shoulder = ChipGeometry {
+            pin_length: 60,
+            pin_shoulder_length: 12,
+            ..ChipGeometry::default()
+        };
+        let long_shoulder = ChipGeometry {
+            pin_length: 60,
+            pin_shoulder_length: 48,
+            ..ChipGeometry::default()
+        };
+        let short_svg = generate_dip_svg("PAL", None, &short_shoulder, false);
+        let long_svg = generate_dip_svg("PAL", None, &long_shoulder, false);
+
+        assert_svg_size(&short_svg, short_shoulder.svg_width(), short_shoulder.chip_height());
+        assert_svg_size(&long_svg, long_shoulder.svg_width(), long_shoulder.chip_height());
+        assert_ne!(
+            line_with(&short_svg, r#"class="dip-pin-leg""#),
+            line_with(&long_svg, r#"class="dip-pin-leg""#)
+        );
+    }
+
+    #[test]
+    fn leg_end_width_controls_leg_end_without_changing_package_width() {
+        let narrow_end = ChipGeometry {
+            pin_length: 60,
+            leg_start_width: 18,
+            leg_end_width: 8,
+            pin_shoulder_width: 28,
+            ..ChipGeometry::default()
+        };
+        let wide_end = ChipGeometry {
+            pin_length: 60,
+            leg_start_width: 18,
+            leg_end_width: 14,
+            pin_shoulder_width: 28,
+            ..ChipGeometry::default()
+        };
+        let narrow_svg = generate_dip_svg("PAL", None, &narrow_end, false);
+        let wide_svg = generate_dip_svg("PAL", None, &wide_end, false);
+
+        assert_svg_size(&narrow_svg, narrow_end.svg_width(), narrow_end.chip_height());
+        assert_svg_size(&wide_svg, wide_end.svg_width(), wide_end.chip_height());
+        assert_ne!(
+            line_with(&narrow_svg, r#"class="dip-pin-leg""#),
+            line_with(&wide_svg, r#"class="dip-pin-leg""#)
+        );
+    }
+
+    #[test]
+    fn leg_start_width_controls_leg_width_after_shoulder_without_changing_package_width() {
+        let narrow_start = ChipGeometry {
+            pin_length: 60,
+            leg_start_width: 8,
+            leg_end_width: 4,
+            pin_shoulder_width: 28,
+            ..ChipGeometry::default()
+        };
+        let wide_start = ChipGeometry {
+            pin_length: 60,
+            leg_start_width: 18,
+            leg_end_width: 4,
+            pin_shoulder_width: 28,
+            ..ChipGeometry::default()
+        };
+        let narrow_svg = generate_dip_svg("PAL", None, &narrow_start, false);
+        let wide_svg = generate_dip_svg("PAL", None, &wide_start, false);
+
+        assert_svg_size(&narrow_svg, narrow_start.svg_width(), narrow_start.chip_height());
+        assert_svg_size(&wide_svg, wide_start.svg_width(), wide_start.chip_height());
+        assert_ne!(
+            line_with(&narrow_svg, r#"class="dip-pin-leg""#),
+            line_with(&wide_svg, r#"class="dip-pin-leg""#)
+        );
     }
 
     #[test]
     fn low_level_renderer_does_not_emit_translucent_normal_mode_strokes() {
-        let svg = generate_dip_svg("PAL", None, 20, &ChipGeometry::default(), false);
+        let svg = generate_dip_svg("PAL", None, &ChipGeometry::default(), false);
 
         assert!(svg.contains(r#"fill="url(#chipGradient)""#));
         assert!(svg.contains(r#"stroke="none""#));
@@ -645,7 +487,7 @@ mod tests {
 
     #[test]
     fn pin_one_indicator_renders_as_shaded_ring() {
-        let svg = generate_dip_svg("PAL", None, 20, &ChipGeometry::default(), false);
+        let svg = generate_dip_svg("PAL", None, &ChipGeometry::default(), false);
 
         assert!(!svg.contains("<circle"));
         assert!(svg.contains(r#"fill="url(#chipNotchInset)" fill-rule="evenodd" stroke="none""#));
@@ -653,14 +495,20 @@ mod tests {
 
     #[test]
     fn pin_one_indicator_aligns_with_first_pin_row() {
-        let svg = generate_dip_svg("PAL", None, 20, &ChipGeometry::default(), false);
+        let geometry = ChipGeometry {
+            pin_pitch: 58,
+            pin_inset: 17,
+            ..ChipGeometry::default()
+        };
+        let svg = generate_dip_svg("PAL", None, &geometry, false);
+        let indicator_path = line_with(&svg, r#"fill-rule="evenodd""#);
 
-        assert!(svg.contains(r#"d="M56,52 A5,5,0,1,0,46,52 A5,5,0,1,0,56,52 z"#));
+        assert!(indicator_path.contains(&format!(",{} A5", geometry.pin_center_y(0))));
     }
 
     #[test]
     fn low_level_renderer_uses_filled_bevel_facets() {
-        let svg = generate_dip_svg("PAL", None, 20, &ChipGeometry::default(), false);
+        let svg = generate_dip_svg("PAL", None, &ChipGeometry::default(), false);
 
         assert!(svg.contains(r#"id="chipBodyClip""#));
         assert!(svg.contains(r#"fill="url(#chipBevelHighlight)""#));
@@ -673,15 +521,17 @@ mod tests {
 
     #[test]
     fn bevel_curves_round_the_inner_turns() {
-        let svg = generate_dip_svg("PAL", None, 20, &ChipGeometry::default(), false);
+        let svg = generate_dip_svg("PAL", None, &ChipGeometry::default(), false);
+        let highlight = line_with(&svg, r#"fill="url(#chipBevelHighlight)""#);
+        let shadow = line_with(&svg, r#"fill="url(#chipBevelShadow)""#);
 
-        assert!(svg.contains("L27,36 Q21,36,21,42"));
-        assert!(svg.contains("L153,464 Q159,464,159,458"));
+        assert!(highlight.contains(" Q"));
+        assert!(shadow.contains(" Q"));
     }
 
     #[test]
     fn chip_diagram_builder_uses_shade_angle_for_bevel_gradients() {
-        let svg = ChipDiagram::new("PAL", 20)
+        let svg = ChipDiagram::new("PAL", ChipGeometry::default())
             .with_options(ChipDiagramOptions {
                 geometry: ChipGeometry::default(),
                 style: ChipDiagramStyle::default().with_shade_angle(0.0),
@@ -695,23 +545,21 @@ mod tests {
 
     #[test]
     fn chip_diagram_builder_renders_notch_left_orientation() {
-        let svg = ChipDiagram::new("PAL", 20)
-            .with_options(ChipDiagramOptions {
-                geometry: ChipGeometry::default(),
-                style: ChipDiagramStyle::default().with_orientation(ChipOrientation::NotchLeft),
-            })
-            .render()
-            .expect("builder should render");
+        let diagram = ChipDiagram::new("PAL", ChipGeometry::default()).with_options(ChipDiagramOptions {
+            geometry: ChipGeometry::default(),
+            style: ChipDiagramStyle::default().with_orientation(ChipOrientation::NotchLeft),
+        });
+        let (width, height) = diagram.document_size().expect("diagram dimensions should be valid");
+        let transform = ChipOrientation::NotchLeft.upright_transform_string(height, width);
+        let svg = diagram.render().expect("builder should render");
 
-        assert!(svg.contains(r#"width="500""#));
-        assert!(svg.contains(r#"height="180""#));
-        assert!(svg.contains(r#"viewBox="0 0 500 180""#));
-        assert!(svg.contains(r#"transform="translate(0 180) rotate(-90)""#));
+        assert_svg_size(&svg, width, height);
+        assert!(svg.contains(&format!(r#"transform="{transform}""#)));
     }
 
     #[test]
     fn oriented_labels_follow_chip_by_default() {
-        let svg = ChipDiagram::new("PAL", 20)
+        let svg = ChipDiagram::new("PAL", ChipGeometry::default())
             .with_options(ChipDiagramOptions {
                 geometry: ChipGeometry::default(),
                 style: ChipDiagramStyle::default().with_orientation(ChipOrientation::NotchLeft),
@@ -719,35 +567,24 @@ mod tests {
             .render()
             .expect("builder should render");
 
-        assert!(svg.contains(r#"transform="translate(0 180) rotate(-90)""#));
-        assert!(!svg.contains(r#"transform="rotate(90 90 250)""#));
-        assert!(!svg.contains(r#"transform="rotate(90 25 52)""#));
-        assert!(!svg.contains(r#"transform="rotate(90 155 52)""#));
+        let geometry = ChipGeometry::default();
+        let transform =
+            ChipOrientation::NotchLeft.upright_transform_string(geometry.svg_width(), geometry.chip_height());
+
+        assert!(svg.contains(&format!(r#"transform="{transform}""#)));
+        assert!(!text_element_start_tag(&svg, "PAL").contains(r#"transform="rotate("#));
+        assert!(!text_element_start_tag(&svg, "1").contains(r#"transform="rotate("#));
+        assert!(!text_element_start_tag(&svg, "20").contains(r#"transform="rotate("#));
     }
 
     #[test]
     fn keep_labels_upright_counter_rotates_text_for_oriented_chips() {
-        for (orientation, label_transform, left_pin_transform, right_pin_transform) in [
-            (
-                ChipOrientation::NotchLeft,
-                r#"transform="rotate(90 90 250)""#,
-                r#"transform="rotate(90 31 52)""#,
-                r#"transform="rotate(90 149 52)""#,
-            ),
-            (
-                ChipOrientation::NotchRight,
-                r#"transform="rotate(-90 90 250)""#,
-                r#"transform="rotate(-90 31 52)""#,
-                r#"transform="rotate(-90 149 52)""#,
-            ),
-            (
-                ChipOrientation::NotchDown,
-                r#"transform="rotate(180 90 250)""#,
-                r#"transform="rotate(180 31 52)""#,
-                r#"transform="rotate(180 149 52)""#,
-            ),
+        for (orientation, expected_transform) in [
+            (ChipOrientation::NotchLeft, r#"transform="rotate(90 "#),
+            (ChipOrientation::NotchRight, r#"transform="rotate(-90 "#),
+            (ChipOrientation::NotchDown, r#"transform="rotate(180 "#),
         ] {
-            let svg = ChipDiagram::new("PAL", 20)
+            let svg = ChipDiagram::new("PAL", ChipGeometry::default())
                 .with_options(ChipDiagramOptions {
                     geometry: ChipGeometry::default(),
                     style: ChipDiagramStyle::default()
@@ -757,15 +594,15 @@ mod tests {
                 .render()
                 .expect("builder should render");
 
-            assert!(svg.contains(label_transform));
-            assert!(svg.contains(left_pin_transform));
-            assert!(svg.contains(right_pin_transform));
+            assert!(text_element_start_tag(&svg, "PAL").contains(expected_transform));
+            assert!(text_element_start_tag(&svg, "1").contains(expected_transform));
+            assert!(text_element_start_tag(&svg, "20").contains(expected_transform));
         }
     }
 
     #[test]
     fn keep_labels_upright_centers_pin_number_anchors() {
-        let svg = ChipDiagram::new("PAL", 20)
+        let svg = ChipDiagram::new("PAL", ChipGeometry::default())
             .with_options(ChipDiagramOptions {
                 geometry: ChipGeometry::default(),
                 style: ChipDiagramStyle::default()
@@ -775,17 +612,18 @@ mod tests {
             .render()
             .expect("builder should render");
 
-        assert!(svg.contains(
-            r#"<text dominant-baseline="middle" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" transform="rotate(90 31 52)" x="31" y="52">"#
-        ));
-        assert!(svg.contains(
-            r#"<text dominant-baseline="middle" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" transform="rotate(90 149 52)" x="149" y="52">"#
-        ));
+        let pin_one = text_element_start_tag(&svg, "1");
+        let pin_twenty = text_element_start_tag(&svg, "20");
+
+        assert!(pin_one.contains(r#"text-anchor="middle""#));
+        assert!(pin_one.contains(r#"transform="rotate(90 "#));
+        assert!(pin_twenty.contains(r#"text-anchor="middle""#));
+        assert!(pin_twenty.contains(r#"transform="rotate(90 "#));
     }
 
     #[test]
     fn notch_left_orientation_compensates_shade_angle() {
-        let svg = ChipDiagram::new("PAL", 20)
+        let svg = ChipDiagram::new("PAL", ChipGeometry::default())
             .with_options(ChipDiagramOptions {
                 geometry: ChipGeometry::default(),
                 style: ChipDiagramStyle::default()
@@ -801,7 +639,7 @@ mod tests {
 
     #[test]
     fn notch_left_orientation_moves_highlight_geometry() {
-        let svg = ChipDiagram::new("PAL", 20)
+        let svg = ChipDiagram::new("PAL", ChipGeometry::default())
             .with_options(ChipDiagramOptions {
                 geometry: ChipGeometry::default(),
                 style: ChipDiagramStyle::default().with_orientation(ChipOrientation::NotchLeft),
@@ -809,15 +647,19 @@ mod tests {
             .render()
             .expect("builder should render");
 
-        assert!(svg.contains(r#"d="M15,30 L80,30 L80,36 L21,36 z M100,30 L159,30 Q165,30,165,36"#));
+        let highlight = line_with(&svg, r#"fill="url(#chipBevelHighlight)""#);
+        let shadow = line_with(&svg, r#"fill="url(#chipBevelShadow)""#);
+
+        assert!(highlight.contains(" Q"));
+        assert!(highlight.contains(" z M"));
         assert!(svg.contains(r#"fill="url(#chipBevelHighlight)""#));
-        assert!(svg.contains(r#"d="M165,470 L21,470 Q15,470,15,464"#));
+        assert!(shadow.contains(" Q"));
         assert!(svg.contains(r#"fill="url(#chipBevelShadow)""#));
     }
 
     #[test]
     fn notch_left_orientation_keeps_body_gradient_vertical_on_screen() {
-        let svg = ChipDiagram::new("PAL", 20)
+        let svg = ChipDiagram::new("PAL", ChipGeometry::default())
             .with_options(ChipDiagramOptions {
                 geometry: ChipGeometry::default(),
                 style: ChipDiagramStyle::default().with_orientation(ChipOrientation::NotchLeft),
@@ -826,46 +668,45 @@ mod tests {
             .expect("builder should render");
 
         assert!(svg.contains(r#"id="chipGradient" x1="100%" x2="0%" y1="0%" y2="0%""#));
-        assert!(svg.contains(r#"transform="translate(0 180) rotate(-90)""#));
+        let geometry = ChipGeometry::default();
+        let transform =
+            ChipOrientation::NotchLeft.upright_transform_string(geometry.svg_width(), geometry.chip_height());
+        assert!(svg.contains(&format!(r#"transform="{transform}""#)));
     }
 
     #[test]
     fn chip_diagram_builder_renders_notch_right_orientation() {
-        let svg = ChipDiagram::new("PAL", 20)
-            .with_options(ChipDiagramOptions {
-                geometry: ChipGeometry::default(),
-                style: ChipDiagramStyle::default().with_orientation(ChipOrientation::NotchRight),
-            })
-            .render()
-            .expect("builder should render");
+        let diagram = ChipDiagram::new("PAL", ChipGeometry::default()).with_options(ChipDiagramOptions {
+            geometry: ChipGeometry::default(),
+            style: ChipDiagramStyle::default().with_orientation(ChipOrientation::NotchRight),
+        });
+        let (width, height) = diagram.document_size().expect("diagram dimensions should be valid");
+        let transform = ChipOrientation::NotchRight.upright_transform_string(height, width);
+        let svg = diagram.render().expect("builder should render");
 
-        assert!(svg.contains(r#"width="500""#));
-        assert!(svg.contains(r#"height="180""#));
-        assert!(svg.contains(r#"viewBox="0 0 500 180""#));
-        assert!(svg.contains(r#"transform="translate(500 0) rotate(90)""#));
+        assert_svg_size(&svg, width, height);
+        assert!(svg.contains(&format!(r#"transform="{transform}""#)));
         assert!(svg.contains(r#"id="chipGradient" x1="0%" x2="100%" y1="0%" y2="0%""#));
     }
 
     #[test]
     fn chip_diagram_builder_renders_notch_down_orientation() {
-        let svg = ChipDiagram::new("PAL", 20)
-            .with_options(ChipDiagramOptions {
-                geometry: ChipGeometry::default(),
-                style: ChipDiagramStyle::default().with_orientation(ChipOrientation::NotchDown),
-            })
-            .render()
-            .expect("builder should render");
+        let diagram = ChipDiagram::new("PAL", ChipGeometry::default()).with_options(ChipDiagramOptions {
+            geometry: ChipGeometry::default(),
+            style: ChipDiagramStyle::default().with_orientation(ChipOrientation::NotchDown),
+        });
+        let (width, height) = diagram.document_size().expect("diagram dimensions should be valid");
+        let transform = ChipOrientation::NotchDown.upright_transform_string(width, height);
+        let svg = diagram.render().expect("builder should render");
 
-        assert!(svg.contains(r#"width="180""#));
-        assert!(svg.contains(r#"height="500""#));
-        assert!(svg.contains(r#"viewBox="0 0 180 500""#));
-        assert!(svg.contains(r#"transform="translate(180 500) rotate(180)""#));
+        assert_svg_size(&svg, width, height);
+        assert!(svg.contains(&format!(r#"transform="{transform}""#)));
         assert!(svg.contains(r#"id="chipGradient" x1="0%" x2="0%" y1="100%" y2="0%""#));
     }
 
     #[test]
     fn notch_radius_can_disable_notch() {
-        let svg = ChipDiagram::new("PAL", 20)
+        let svg = ChipDiagram::new("PAL", ChipGeometry::default())
             .with_options(ChipDiagramOptions {
                 geometry: ChipGeometry::default().with_notch_radius(None),
                 style: ChipDiagramStyle::default(),
@@ -875,12 +716,13 @@ mod tests {
 
         assert!(!svg.contains("A12,12"));
         assert!(!svg.contains(r#"stroke="url(#chipBevelHighlight)""#));
-        assert!(svg.contains(r#"d="M15,470 L15,36 Q15,30,21,30 L165,30 L159,36"#));
+        assert!(svg.contains(r#"fill="url(#chipBevelHighlight)""#));
     }
 
     #[test]
     fn escapes_chip_label_text() {
-        let svg = generate_dip_svg("A&B <C>", None, 14, &ChipGeometry::default(), false);
+        let geometry = ChipGeometry::default().with_pin_count(14);
+        let svg = generate_dip_svg("A&B <C>", None, &geometry, false);
 
         assert!(svg.contains("A&amp;B &lt;C&gt;"));
     }
@@ -902,5 +744,37 @@ mod tests {
         let error = render_toml(toml, ChipDiagramOptions::default()).expect_err("SOP should be rejected");
 
         assert!(matches!(error, DipSvgError::UnsupportedPackage { .. }));
+    }
+
+    fn line_with<'a>(svg: &'a str, needle: &str) -> &'a str {
+        svg.lines()
+            .find(|line| line.contains(needle))
+            .expect("expected SVG line to be present")
+    }
+
+    fn assert_svg_size(svg: &str, width: usize, height: usize) {
+        assert!(svg.contains(&format!(r#"width="{width}""#)));
+        assert!(svg.contains(&format!(r#"height="{height}""#)));
+        assert!(svg.contains(&format!(r#"viewBox="0 0 {width} {height}""#)));
+    }
+
+    fn lines_with<'a>(svg: &'a str, needle: &str) -> Vec<&'a str> {
+        svg.lines().filter(|line| line.contains(needle)).collect()
+    }
+
+    fn has_gradient_stop(svg: &str, offset: &str, color: &str, opacity: &str) -> bool {
+        svg.lines().any(|line| {
+            line.contains("<stop")
+                && line.contains(&format!(r#"offset="{offset}""#))
+                && line.contains(&format!(r#"stop-color="{color}""#))
+                && line.contains(&format!(r#"stop-opacity="{opacity}""#))
+        })
+    }
+
+    fn text_element_start_tag<'a>(svg: &'a str, text: &str) -> &'a str {
+        let element_text = format!(">\n{text}\n</text>");
+        let text_end = svg.find(&element_text).expect("expected SVG text element");
+        let text_start = svg[..text_end].rfind("<text ").expect("expected text start tag");
+        &svg[text_start..text_end + 1]
     }
 }

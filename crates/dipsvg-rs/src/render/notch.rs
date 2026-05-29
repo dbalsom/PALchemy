@@ -1,3 +1,7 @@
+// dipsvg-rs: A Rust library for rendering chip definitions to SVG diagrams
+// Copyright (C) 2026 Daniel Balsom
+// SPDX-License-Identifier: MIT OR GPL-3.0-or-later
+
 use super::ChipRenderer;
 
 use svg::node::element::{path::Data, Mask, Path as SvgPath, Rectangle};

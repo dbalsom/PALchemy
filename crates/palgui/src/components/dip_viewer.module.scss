@@ -13,8 +13,8 @@
 .pin_controls {
     display: grid;
     grid-auto-rows: var(--dip-pin-pitch);
-    padding-top: var(--dip-top-inset);
-    padding-bottom: var(--dip-bottom-inset);
+    padding-top: var(--dip-pin-inset);
+    padding-bottom: var(--dip-pin-inset);
     min-height: var(--dip-chip-height);
 }
 

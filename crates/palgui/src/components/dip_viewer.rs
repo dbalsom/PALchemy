@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use dipsvg_rs::{ChipDiagram, ChipDiagramOptions, ChipDiagramStyle, ChipGeometry};
+use dipsvg::{ChipDiagram, ChipDiagramOptions, ChipDiagramStyle, ChipGeometry};
 use leptos::prelude::*;
 use palcore::{AppSettings, ChipDef, InteractiveStatus, PinDirection, PinState};
 use stylance::import_style;
@@ -34,17 +34,16 @@ pub fn DipViewer(
             let pin_count = chip.pins as usize;
             let pins_per_side = pin_count / 2;
             let layout = ChipGeometry::from_chip(&chip);
-            let chip_height = layout.chip_height(pins_per_side);
+            let chip_height = layout.chip_height();
             let diagram_width = layout.labeled_svg_width();
 
             let left_pins: Vec<u8> = (1..=pins_per_side as u8).collect();
             let right_pins: Vec<u8> = (pins_per_side as u8 + 1..=pin_count as u8).rev().collect();
 
             let layout_style = format!(
-                "--dip-pin-pitch:{}px;--dip-top-inset:{}px;--dip-bottom-inset:{}px;--dip-chip-height:{}px;--dip-svg-width:{}px;",
+                "--dip-pin-pitch:{}px;--dip-pin-inset:{}px;--dip-chip-height:{}px;--dip-svg-width:{}px;",
                 layout.pin_pitch,
-                layout.top_inset,
-                layout.bottom_inset,
+                layout.pin_inset,
                 chip_height,
                 diagram_width
             );

@@ -1,3 +1,7 @@
+// dipsvg-rs: A Rust library for rendering chip definitions to SVG diagrams
+// Copyright (C) 2026 Daniel Balsom
+// SPDX-License-Identifier: MIT OR GPL-3.0-or-later
+
 mod bevel;
 mod definitions;
 mod notch;
@@ -7,10 +11,23 @@ use svg::{
     Document,
 };
 
-use super::{ChipDiagram, ChipMetrics};
+use super::{ChipDiagram, ChipDiagramOptions};
+use crate::diagram::ChipMetrics;
 use crate::types::ChipOrientation;
 
 const PIN_LABEL_FONT_FAMILY: &str = "var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)";
+const PIN_TEXT_BASELINE: &str = "central";
+const PIN_BODY_OVERLAP: usize = 6;
+const PIN_SHOULDER_TAPER_WIDTH: usize = 3;
+const CHIP_BODY_DROP_SHADOW_FILTER_ID: &str = "chipBodyDropShadowBlur";
+const CHIP_BODY_DROP_SHADOW_BLUR: usize = 3;
+const CHIP_BODY_DROP_SHADOW_OPACITY: &str = "0.32";
+
+#[derive(Debug, Clone, Copy)]
+enum PinSide {
+    Left,
+    Right,
+}
 
 pub struct ChipRenderer<'a> {
     diagram: &'a ChipDiagram,
@@ -29,7 +46,7 @@ impl<'a> ChipRenderer<'a> {
         let diagram = self.diagram;
         let metrics = self.metrics;
         let geometry = &diagram.geometry;
-        let pin_count = diagram.pin_count;
+        let pin_count = geometry.pin_count;
         let style = &diagram.style;
         let pins_per_side = metrics.pins_per_side;
         let diagram_width = metrics.diagram_width;
@@ -67,40 +84,47 @@ impl<'a> ChipRenderer<'a> {
             "var(--text-muted, #94a3b8)"
         };
         let pin_name_label_fill = ChipRenderer::pin_name_label_fill(style);
-        let pin_color = if style.high_contrast {
-            "#ffffff"
+        let (left_pin_color, right_pin_color) = if style.high_contrast {
+            ("#ffffff", "#ffffff")
         } else {
-            "url(#pinGradient)"
+            ("url(#pinGradient)", "url(#pinGradientReverse)")
+        };
+        let render_options = ChipDiagramOptions {
+            geometry: *geometry,
+            style: style.clone(),
         };
 
-        document = document.add(ChipRenderer::definitions(
-            style.effective_shade_angle(),
-            style.orientation,
-        ));
+        document = document.add(ChipRenderer::definitions(&render_options));
 
         for i in 0..pins_per_side {
-            let pin_y = geometry.pin_center_y(i) - geometry.pin_stub_height / 2;
-            content = content.add(
-                Rectangle::new()
-                    .set("x", metrics.chip_origin_x)
-                    .set("y", pin_y)
-                    .set("width", geometry.pin_stub_width + 5)
-                    .set("height", geometry.pin_stub_height)
-                    .set("fill", pin_color)
-                    .set("rx", 2),
-            );
-            content = content.add(
-                Rectangle::new()
-                    .set(
-                        "x",
-                        metrics.chip_origin_x + geometry.pin_stub_width + geometry.chip_width - 5,
-                    )
-                    .set("y", pin_y)
-                    .set("width", geometry.pin_stub_width + 5)
-                    .set("height", geometry.pin_stub_height)
-                    .set("fill", pin_color)
-                    .set("rx", 2),
-            );
+            let pin_center_y = geometry.pin_center_y(i);
+            content = content.add(ChipRenderer::pin_leg_path(
+                PinSide::Left,
+                metrics.chip_origin_x,
+                chip_left,
+                pin_center_y,
+                geometry,
+                left_pin_color,
+            ));
+            content = content.add(ChipRenderer::pin_leg_path(
+                PinSide::Right,
+                metrics.chip_origin_x,
+                chip_right,
+                pin_center_y,
+                geometry,
+                right_pin_color,
+            ));
+        }
+
+        if ChipRenderer::include_body_drop_shadow(&render_options) {
+            content = content.add(ChipRenderer::chip_body_drop_shadow(
+                chip_left,
+                chip_top,
+                geometry.chip_width,
+                chip_body_height,
+                geometry.chip_corner_radius,
+                style,
+            ));
         }
 
         let body_fill = if style.high_contrast {
@@ -245,9 +269,9 @@ impl<'a> ChipRenderer<'a> {
         for i in 0..pins_per_side {
             let y = geometry.pin_center_y(i);
             let pin_label_inset = if style.keep_labels_upright { 16 } else { 10 };
-            let left_pin_number_x = metrics.chip_origin_x + geometry.pin_stub_width + pin_label_inset;
+            let left_pin_number_x = metrics.chip_origin_x + geometry.pin_length + pin_label_inset;
             let right_pin_number_x =
-                metrics.chip_origin_x + geometry.pin_stub_width + geometry.chip_width - pin_label_inset;
+                metrics.chip_origin_x + geometry.pin_length + geometry.chip_width - pin_label_inset;
             let upright_pin_anchor = if style.keep_labels_upright {
                 Some("middle")
             } else {
@@ -260,7 +284,8 @@ impl<'a> ChipRenderer<'a> {
                 .set("font-size", 12)
                 .set("font-weight", 600)
                 .set("font-family", "monospace")
-                .set("dominant-baseline", "middle");
+                .set("alignment-baseline", PIN_TEXT_BASELINE)
+                .set("dominant-baseline", PIN_TEXT_BASELINE);
             if let Some(anchor) = upright_pin_anchor {
                 left_pin_label = left_pin_label.set("text-anchor", anchor);
             }
@@ -275,7 +300,8 @@ impl<'a> ChipRenderer<'a> {
                     .set("font-weight", 600)
                     .set("font-family", "monospace")
                     .set("text-anchor", right_pin_anchor)
-                    .set("dominant-baseline", "middle"),
+                    .set("alignment-baseline", PIN_TEXT_BASELINE)
+                    .set("dominant-baseline", PIN_TEXT_BASELINE),
                 style,
                 right_pin_number_x,
                 y,
@@ -306,11 +332,122 @@ impl<'a> ChipRenderer<'a> {
             .close()
     }
 
+    fn pin_leg_path(
+        side: PinSide,
+        chip_origin_x: usize,
+        body_edge_x: usize,
+        center_y: usize,
+        geometry: &super::ChipGeometry,
+        fill: &str,
+    ) -> SvgPath {
+        let start_half_height = geometry.leg_start_width as f32 / 2.0;
+        let end_half_height = geometry.leg_end_width as f32 / 2.0;
+        let shoulder_half_height = geometry.pin_shoulder_width as f32 / 2.0;
+        let shoulder_length = geometry.pin_shoulder_length.min(geometry.pin_length);
+        let taper_width = PIN_SHOULDER_TAPER_WIDTH.min(shoulder_length);
+        let center_y = center_y as f32;
+        let start_top = center_y - start_half_height;
+        let start_bottom = center_y + start_half_height;
+        let end_top = center_y - end_half_height;
+        let end_bottom = center_y + end_half_height;
+        let shoulder_top = center_y - shoulder_half_height;
+        let shoulder_bottom = center_y + shoulder_half_height;
+
+        let data = match side {
+            PinSide::Left => {
+                let outer_x = chip_origin_x;
+                let shoulder_outer_x = body_edge_x.saturating_sub(shoulder_length);
+                let shoulder_inner_x = shoulder_outer_x + taper_width;
+                let inner_x = body_edge_x + PIN_BODY_OVERLAP;
+
+                Data::new()
+                    .move_to((outer_x as f32, end_top))
+                    .line_to((shoulder_outer_x as f32, start_top))
+                    .line_to((shoulder_inner_x as f32, shoulder_top))
+                    .line_to((inner_x as f32, shoulder_top))
+                    .line_to((inner_x as f32, shoulder_bottom))
+                    .line_to((shoulder_inner_x as f32, shoulder_bottom))
+                    .line_to((shoulder_outer_x as f32, start_bottom))
+                    .line_to((outer_x as f32, end_bottom))
+                    .close()
+            }
+            PinSide::Right => {
+                let outer_x = chip_origin_x + geometry.pin_length * 2 + geometry.chip_width;
+                let shoulder_outer_x = body_edge_x + shoulder_length;
+                let shoulder_inner_x = shoulder_outer_x.saturating_sub(taper_width);
+                let inner_x = body_edge_x.saturating_sub(PIN_BODY_OVERLAP);
+
+                Data::new()
+                    .move_to((outer_x as f32, end_top))
+                    .line_to((shoulder_outer_x as f32, start_top))
+                    .line_to((shoulder_inner_x as f32, shoulder_top))
+                    .line_to((inner_x as f32, shoulder_top))
+                    .line_to((inner_x as f32, shoulder_bottom))
+                    .line_to((shoulder_inner_x as f32, shoulder_bottom))
+                    .line_to((shoulder_outer_x as f32, start_bottom))
+                    .line_to((outer_x as f32, end_bottom))
+                    .close()
+            }
+        };
+
+        SvgPath::new()
+            .set("class", "dip-pin-leg")
+            .set("d", data)
+            .set("fill", fill)
+            .set("stroke", "none")
+    }
+
+    fn include_body_drop_shadow(options: &ChipDiagramOptions) -> bool {
+        options.style.chip_body_drop_shadow && !options.style.high_contrast
+    }
+
+    fn chip_body_drop_shadow(
+        chip_left: usize,
+        chip_top: usize,
+        chip_width: usize,
+        chip_body_height: usize,
+        chip_corner_radius: usize,
+        style: &super::ChipDiagramStyle,
+    ) -> Rectangle {
+        let (offset_x, offset_y) = ChipRenderer::chip_body_drop_shadow_offset(style);
+
+        Rectangle::new()
+            .set("class", "dip-chip-body-shadow")
+            .set("x", chip_left)
+            .set("y", chip_top)
+            .set("width", chip_width)
+            .set("height", chip_body_height)
+            .set("rx", chip_corner_radius)
+            .set("fill", "#000000")
+            .set("filter", format!("url(#{CHIP_BODY_DROP_SHADOW_FILTER_ID})"))
+            .set("opacity", CHIP_BODY_DROP_SHADOW_OPACITY)
+            .set("transform", format!("translate({offset_x:.2} {offset_y:.2})"))
+    }
+
+    fn chip_body_drop_shadow_offset(style: &super::ChipDiagramStyle) -> (f32, f32) {
+        let radians = style.effective_shade_angle().to_radians();
+        let offset_x = radians.cos() * style.shadow_distance;
+        let offset_y = radians.sin() * style.shadow_distance;
+
+        (
+            ChipRenderer::normalize_shadow_offset(offset_x),
+            ChipRenderer::normalize_shadow_offset(offset_y),
+        )
+    }
+
+    fn normalize_shadow_offset(value: f32) -> f32 {
+        if value.abs() < 0.005 {
+            0.0
+        } else {
+            value
+        }
+    }
+
     fn pin_name_label_overlay(&self, fill: &str) -> Group {
         let diagram = self.diagram;
         let metrics = self.metrics;
         let geometry = &diagram.geometry;
-        let pin_count = diagram.pin_count;
+        let pin_count = geometry.pin_count;
         let mut labels = Group::new();
 
         for i in 0..metrics.pins_per_side {
@@ -430,7 +567,8 @@ impl<'a> ChipRenderer<'a> {
             .set("font-weight", 700)
             .set("font-family", PIN_LABEL_FONT_FAMILY)
             .set("text-anchor", anchor)
-            .set("dominant-baseline", "middle");
+            .set("alignment-baseline", PIN_TEXT_BASELINE)
+            .set("dominant-baseline", PIN_TEXT_BASELINE);
 
         if label.active_low {
             text = text.set("text-decoration", "overline");
