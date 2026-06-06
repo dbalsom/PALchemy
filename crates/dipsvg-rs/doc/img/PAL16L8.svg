@@ -1,0 +1,211 @@
+<svg height="500" viewBox="0 0 536 500" width="536" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="chipGradient" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:var(--chip-body, #3a3e44)"/>
+<stop offset="100%" style="stop-color:var(--chip-body2, #272a30)"/>
+</linearGradient>
+<linearGradient id="chipBevelHighlight" x1="14.64%" x2="85.36%" y1="14.64%" y2="85.36%">
+<stop offset="0%" stop-color="#ffffff" stop-opacity="0.36"/>
+<stop offset="35%" stop-color="#ffffff" stop-opacity="0.08"/>
+<stop offset="100%" stop-color="#ffffff" stop-opacity="0.00"/>
+</linearGradient>
+<linearGradient id="chipBevelShadow" x1="85.36%" x2="14.64%" y1="85.36%" y2="14.64%">
+<stop offset="0%" stop-color="#000000" stop-opacity="0.24"/>
+<stop offset="45%" stop-color="#000000" stop-opacity="0.12"/>
+<stop offset="100%" stop-color="var(--chip-body2, #272a30)" stop-opacity="0.34"/>
+</linearGradient>
+<linearGradient id="chipNotchInset" x1="85.36%" x2="14.64%" y1="85.36%" y2="14.64%">
+<stop offset="0%" style="stop-color:var(--chip-highlight, #9b9fa4)"/>
+<stop offset="66%" style="stop-color:var(--chip-body, #3a3e44)"/>
+<stop offset="100%" style="stop-color:var(--chip-body2, #272a30)"/>
+</linearGradient>
+<linearGradient id="pinIndicatorInset" x1="85.36%" x2="14.64%" y1="85.36%" y2="14.64%">
+<stop offset="0%" style="stop-color:var(--chip-highlight, #9b9fa4)"/>
+<stop offset="50%" style="stop-color:var(--chip-body, #3a3e44)"/>
+<stop offset="100%" style="stop-color:var(--chip-body2, #272a30)"/>
+</linearGradient>
+<linearGradient id="pinGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#8793a3" stop-opacity="1"/>
+<stop offset="33%" stop-color="var(--chip-pin, #cbd5e1)" stop-opacity="1"/>
+<stop offset="45%" stop-color="#f8fafc" stop-opacity="0.96"/>
+<stop offset="48%" stop-color="#f8fafc" stop-opacity="0.96"/>
+<stop offset="50%" stop-color="var(--chip-pin, #cbd5e1)" stop-opacity="1"/>
+<stop offset="66%" stop-color="#475569" stop-opacity="1"/>
+</linearGradient>
+<linearGradient id="pinGradientReverse" x1="100%" x2="0%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#8793a3" stop-opacity="1"/>
+<stop offset="33%" stop-color="var(--chip-pin, #cbd5e1)" stop-opacity="1"/>
+<stop offset="45%" stop-color="#f8fafc" stop-opacity="0.96"/>
+<stop offset="48%" stop-color="#f8fafc" stop-opacity="0.96"/>
+<stop offset="50%" stop-color="var(--chip-pin, #cbd5e1)" stop-opacity="1"/>
+<stop offset="66%" stop-color="#475569" stop-opacity="1"/>
+</linearGradient>
+<filter color-interpolation-filters="sRGB" height="140%" id="chipBodyDropShadowBlur" width="140%" x="-20%" y="-20%">
+<feGaussianBlur stdDeviation="3"/>
+</filter>
+</defs>
+<g>
+<path class="dip-pin-leg" d="M180,48.5 L185,46 L188,37 L199,37 L199,67 L188,67 L185,58 L180,55.5 z" fill="url(#pinGradient)" stroke="none"/>
+<path class="dip-pin-leg" d="M356,48.5 L351,46 L348,37 L337,37 L337,67 L348,67 L351,58 L356,55.5 z" fill="url(#pinGradientReverse)" stroke="none"/>
+<path class="dip-pin-leg" d="M180,92.5 L185,90 L188,81 L199,81 L199,111 L188,111 L185,102 L180,99.5 z" fill="url(#pinGradient)" stroke="none"/>
+<path class="dip-pin-leg" d="M356,92.5 L351,90 L348,81 L337,81 L337,111 L348,111 L351,102 L356,99.5 z" fill="url(#pinGradientReverse)" stroke="none"/>
+<path class="dip-pin-leg" d="M180,136.5 L185,134 L188,125 L199,125 L199,155 L188,155 L185,146 L180,143.5 z" fill="url(#pinGradient)" stroke="none"/>
+<path class="dip-pin-leg" d="M356,136.5 L351,134 L348,125 L337,125 L337,155 L348,155 L351,146 L356,143.5 z" fill="url(#pinGradientReverse)" stroke="none"/>
+<path class="dip-pin-leg" d="M180,180.5 L185,178 L188,169 L199,169 L199,199 L188,199 L185,190 L180,187.5 z" fill="url(#pinGradient)" stroke="none"/>
+<path class="dip-pin-leg" d="M356,180.5 L351,178 L348,169 L337,169 L337,199 L348,199 L351,190 L356,187.5 z" fill="url(#pinGradientReverse)" stroke="none"/>
+<path class="dip-pin-leg" d="M180,224.5 L185,222 L188,213 L199,213 L199,243 L188,243 L185,234 L180,231.5 z" fill="url(#pinGradient)" stroke="none"/>
+<path class="dip-pin-leg" d="M356,224.5 L351,222 L348,213 L337,213 L337,243 L348,243 L351,234 L356,231.5 z" fill="url(#pinGradientReverse)" stroke="none"/>
+<path class="dip-pin-leg" d="M180,268.5 L185,266 L188,257 L199,257 L199,287 L188,287 L185,278 L180,275.5 z" fill="url(#pinGradient)" stroke="none"/>
+<path class="dip-pin-leg" d="M356,268.5 L351,266 L348,257 L337,257 L337,287 L348,287 L351,278 L356,275.5 z" fill="url(#pinGradientReverse)" stroke="none"/>
+<path class="dip-pin-leg" d="M180,312.5 L185,310 L188,301 L199,301 L199,331 L188,331 L185,322 L180,319.5 z" fill="url(#pinGradient)" stroke="none"/>
+<path class="dip-pin-leg" d="M356,312.5 L351,310 L348,301 L337,301 L337,331 L348,331 L351,322 L356,319.5 z" fill="url(#pinGradientReverse)" stroke="none"/>
+<path class="dip-pin-leg" d="M180,356.5 L185,354 L188,345 L199,345 L199,375 L188,375 L185,366 L180,363.5 z" fill="url(#pinGradient)" stroke="none"/>
+<path class="dip-pin-leg" d="M356,356.5 L351,354 L348,345 L337,345 L337,375 L348,375 L351,366 L356,363.5 z" fill="url(#pinGradientReverse)" stroke="none"/>
+<path class="dip-pin-leg" d="M180,400.5 L185,398 L188,389 L199,389 L199,419 L188,419 L185,410 L180,407.5 z" fill="url(#pinGradient)" stroke="none"/>
+<path class="dip-pin-leg" d="M356,400.5 L351,398 L348,389 L337,389 L337,419 L348,419 L351,410 L356,407.5 z" fill="url(#pinGradientReverse)" stroke="none"/>
+<path class="dip-pin-leg" d="M180,444.5 L185,442 L188,433 L199,433 L199,463 L188,463 L185,454 L180,451.5 z" fill="url(#pinGradient)" stroke="none"/>
+<path class="dip-pin-leg" d="M356,444.5 L351,442 L348,433 L337,433 L337,463 L348,463 L351,454 L356,451.5 z" fill="url(#pinGradientReverse)" stroke="none"/>
+<rect class="dip-chip-body-shadow" fill="#000000" filter="url(#chipBodyDropShadowBlur)" height="440" opacity="0.32" rx="6" transform="translate(10.61 10.61)" width="150" x="193" y="30"/>
+<rect fill="url(#chipGradient)" height="440" rx="6" stroke="none" width="150" x="193" y="30"/>
+<mask height="500" id="chipNotchCutoutMask" maskUnits="userSpaceOnUse" width="536" x="0" y="0">
+<rect fill="#ffffff" height="500" width="536" x="0" y="0"/>
+<path d="M256,30 A12,12,0,0,0,280,30 L275,30 A7,7,0,0,1,261,30 z" fill="#000000"/>
+</mask>
+<clipPath id="chipBodyClip">
+<rect height="440" rx="6" width="150" x="193" y="30"/>
+</clipPath>
+<g clip-path="url(#chipBodyClip)" mask="url(#chipNotchCutoutMask)">
+<path d="M193,470 L193,36 Q193,30,199,30 L258,30 L258,36 L205,36 Q199,36,199,42 L199,464 z M278,30 L343,30 L337,36 L278,36 z" fill="url(#chipBevelHighlight)"/>
+<path d="M343,30 L343,464 Q343,470,337,470 L193,470 L199,464 L331,464 Q337,464,337,458 L337,36 z" fill="url(#chipBevelShadow)"/>
+</g>
+<g clip-path="url(#chipBodyClip)">
+<path d="M256,30 A12,12,0,0,0,280,30 L275,30 A7,7,0,0,1,261,30 z" fill="url(#chipNotchInset)" stroke="none"/>
+</g>
+<path d="M234,52 A5,5,0,1,0,224,52 A5,5,0,1,0,234,52 z M232.5,52 A3.5,3.5,0,1,1,225.5,52 A3.5,3.5,0,1,1,232.5,52 z" fill="url(#chipNotchInset)" fill-rule="evenodd" stroke="none"/>
+<text dominant-baseline="middle" fill="var(--text-main, #f8fafc)" font-family="Inter, sans-serif" font-size="16.0" font-weight="700" opacity="0.6" text-anchor="middle" x="268" y="250">
+PAL16L8
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="209" y="52">
+1
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="327" y="52">
+20
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="209" y="96">
+2
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="327" y="96">
+19
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="209" y="140">
+3
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="327" y="140">
+18
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="209" y="184">
+4
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="327" y="184">
+17
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="209" y="228">
+5
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="327" y="228">
+16
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="209" y="272">
+6
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="327" y="272">
+15
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="209" y="316">
+7
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="327" y="316">
+14
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="209" y="360">
+8
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="327" y="360">
+13
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="209" y="404">
+9
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="327" y="404">
+12
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="209" y="448">
+10
+</text>
+<text alignment-baseline="central" dominant-baseline="central" fill="var(--text-muted, #94a3b8)" font-family="monospace" font-size="12" font-weight="600" text-anchor="middle" x="327" y="448">
+11
+</text>
+</g>
+<g>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="end" x="160" y="52">
+IN_1
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="start" x="376" y="52">
+VCC
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="end" x="160" y="96">
+IN_2
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="start" text-decoration="overline" x="376" y="96">
+OUT_8
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="end" x="160" y="140">
+IN_3
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="start" text-decoration="overline" x="376" y="140">
+I/O_7
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="end" x="160" y="184">
+IN_4
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="start" text-decoration="overline" x="376" y="184">
+I/O_6
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="end" x="160" y="228">
+IN_5
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="start" text-decoration="overline" x="376" y="228">
+I/O_5
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="end" x="160" y="272">
+IN_6
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="start" text-decoration="overline" x="376" y="272">
+I/O_4
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="end" x="160" y="316">
+IN_7
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="start" text-decoration="overline" x="376" y="316">
+I/O_3
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="end" x="160" y="360">
+IN_8
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="start" text-decoration="overline" x="376" y="360">
+I/O_2
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="end" x="160" y="404">
+IN_9
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="start" text-decoration="overline" x="376" y="404">
+OUT_1
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="end" x="160" y="448">
+GND
+</text>
+<text alignment-baseline="central" class="dip-pin-label" dominant-baseline="central" fill="light-dark(#0f172a, #f8fafc)" font-family="var(--font-mono, ui-monospace, Menlo, Monaco, Consolas, monospace)" font-size="16" font-weight="700" text-anchor="start" x="376" y="448">
+IN_10
+</text>
+</g>
+</svg>
