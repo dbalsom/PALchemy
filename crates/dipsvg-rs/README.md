@@ -25,6 +25,17 @@ Basically, if you want something to look 100% the same on every platform in ever
 
 A future version of this crate may perform the necessary conversion for you. Or not! Pull requests accepted.
 
+#### Overbars
+
+dipsvg-rs attempts to render active-low input pin labels with an overbar - this is done via the `text-decoration-line` CSS property set to `overline`.
+
+It will show consistently in browsers, but some vector editors will ignore it (looking at you, Affinity). You may have to just draw the overbar back on. Yes, it can be rendered as a line, but then see the section above for why that ends up not working so well unless you also convert text to curves. Inkscape seems to handle it.
+
+#### Responsive CSS
+
+My eventual goal is to emit responsive CSS so that labels are visible on light and dark themes. Whichever theme you've got set for GitHub right now you probably can only read the labels on one of the images at the top. 
+
+
 
 
 
