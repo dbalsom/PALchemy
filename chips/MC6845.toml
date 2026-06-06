@@ -1,0 +1,51 @@
+name = "Motorola MC6845"
+model = "MC6845"
+model_description = "CRT controller"
+class = "misc"
+pins = 40
+width = 260
+voltage = 5.0
+io_voltage = 3.3
+package = "DIP"
+
+[pinout]
+1 = { type = "GND" }
+2 = { type = "Input", name = "/RESET", active_low = true }
+3 = { type = "Input", name = "LPSTB" }
+4 = { type = "Output", name = "MA0" }
+5 = { type = "Output", name = "MA1" }
+6 = { type = "Output", name = "MA2" }
+7 = { type = "Output", name = "MA3" }
+8 = { type = "Output", name = "MA4" }
+9 = { type = "Output", name = "MA5" }
+10 = { type = "Output", name = "MA6" }
+11 = { type = "Output", name = "MA7" }
+12 = { type = "Output", name = "MA8" }
+13 = { type = "Output", name = "MA9" }
+14 = { type = "Output", name = "MA10" }
+15 = { type = "Output", name = "MA11" }
+16 = { type = "Output", name = "MA12" }
+17 = { type = "Output", name = "MA13" }
+18 = { type = "Output", name = "DE" }
+19 = { type = "Output", name = "CURSOR" }
+20 = { type = "VCC" }
+21 = { type = "Input", name = "CLK" }
+22 = { type = "Input", name = "R/W" }
+23 = { type = "Input", name = "E" }
+24 = { type = "Input", name = "RS" }
+25 = { type = "Input", name = "/CS", active_low = true }
+26 = { type = "IO", name = "D7" }
+27 = { type = "IO", name = "D6" }
+28 = { type = "IO", name = "D5" }
+29 = { type = "IO", name = "D4" }
+30 = { type = "IO", name = "D3" }
+31 = { type = "IO", name = "D2" }
+32 = { type = "IO", name = "D1" }
+33 = { type = "IO", name = "D0" }
+34 = { type = "Output", name = "RA4" }
+35 = { type = "Output", name = "RA3" }
+36 = { type = "Output", name = "RA2" }
+37 = { type = "Output", name = "RA1" }
+38 = { type = "Output", name = "RA0" }
+39 = { type = "Output", name = "HS" }
+40 = { type = "Output", name = "VS" }
