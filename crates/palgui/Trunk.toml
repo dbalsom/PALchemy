@@ -6,6 +6,6 @@ ignore = ["src/components/bundle.scss"]
 # Stylance bundles our modular CSS for us
 # https://crates.io/crates/stylance
 [[hooks]]
-stage = "build"
+stage = "pre_build"
 command = "stylance"
-command_arguments = ["--output-file", "src/components/bundle.scss", "."]
+command_arguments = ["--output-file", "src/components/bundle.scss", "-f", "src", "."]
